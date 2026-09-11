@@ -14,6 +14,7 @@ import { useInput } from "./hooks/useInput";
 import { createPhysics } from "./lib/physics";
 import { ORIGIN, BOUNDS } from "./lib/geo";
 import { useSim } from "./lib/store";
+import { Analytics } from "@vercel/analytics/react";
 class ErrorBoundary extends Component<
   { children: React.ReactNode },
   { error: boolean }
@@ -97,6 +98,7 @@ export default function App() {
         </Canvas>
       </ErrorBoundary>
       <Hud />
+      <Analytics />
     </main>
   );
 }
