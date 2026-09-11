@@ -1,0 +1,6 @@
+.env
+.env.*
+.git
+.sites-runtime
+node_modules
+dist
