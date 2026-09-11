@@ -2,6 +2,14 @@ import { useSyncExternalStore } from "react";
 export type TileStatus = "demo" | "loading" | "live" | "error";
 export type State = {
   speed: number;
+  elevation: number;
+  surfaceElevation: number | null;
+  groundedWheels: number;
+  tileDiagnostics: {
+    resident: number;
+    megabytes: number;
+    progress: number;
+  } | null;
   gear: "D" | "R";
   x: number;
   z: number;
@@ -22,6 +30,10 @@ export type State = {
 };
 let state: State = {
   speed: 0,
+  elevation: 0,
+  surfaceElevation: null,
+  groundedWheels: 0,
+  tileDiagnostics: null,
   gear: "D",
   x: 0,
   z: 0,

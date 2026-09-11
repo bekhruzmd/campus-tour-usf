@@ -13,6 +13,8 @@ const down = new Vector3(0, -1, 0);
 export function useCampusTiles(physics: Physics) {
   const { camera, gl, scene } = useThree();
   const renderer = useRef<TilesRenderer | null>(null);
+  const resetVersion = useRef(sim.get().reset);
+  const pendingPlacement = useRef(false);
   const timer = useRef(0),
     ray = useRef(new Raycaster());
   useEffect(() => {
@@ -47,10 +49,10 @@ export function useCampusTiles(physics: Physics) {
     tiles.group.updateMatrixWorld(true);
     tiles.setCamera(camera);
     tiles.errorTarget = 8;
-    tiles.lruCache.maxSize = 250;
-    tiles.lruCache.minSize = 180;
-    tiles.lruCache.maxBytesSize = 256 * 1024 * 1024;
-    tiles.lruCache.minBytesSize = 192 * 1024 * 1024;
+    tiles.lruCache.maxSize = 1200;
+    tiles.lruCache.minSize = 900;
+    tiles.lruCache.maxBytesSize = 512 * 1024 * 1024;
+    tiles.lruCache.minBytesSize = 384 * 1024 * 1024;
     tiles.downloadQueue.maxJobs = 6;
     tiles.parseQueue.maxJobs = 2;
     tiles.autoDisableRendererCulling = false;
@@ -93,12 +95,27 @@ export function useCampusTiles(physics: Physics) {
     const tiles = renderer.current;
     if (!tiles) return;
     const s = sim.get();
+    if (s.reset !== resetVersion.current) {
+      resetVersion.current = s.reset;
+      pendingPlacement.current = true;
+    }
     tiles.errorTarget = s.quality === "high" ? 3 : 8;
     tiles.setResolutionFromRenderer(camera, gl);
     tiles.update();
     timer.current += dt;
     if (timer.current < 0.3) return;
     timer.current = 0;
+    const cache = tiles.lruCache as typeof tiles.lruCache & {
+      itemSet: Map<unknown, unknown>;
+      cachedBytes: number;
+    };
+    sim.set({
+      tileDiagnostics: {
+        resident: cache.itemSet.size,
+        megabytes: Math.round(cache.cachedBytes / 1048576),
+        progress: tiles.loadProgress,
+      },
+    });
     const credits = tiles
       .getAttributions()
       .filter((a) => a.type === "string")
@@ -114,16 +131,26 @@ export function useCampusTiles(physics: Physics) {
         .find((hit) => hit.face && hit.point.y > -50);
     };
     const hit = cast(physics.chassis.position.x, physics.chassis.position.z);
-    if (hit && s.tileStatus !== "live") {
+    if (hit && (s.tileStatus !== "live" || pendingPlacement.current)) {
+      pendingPlacement.current = false;
       sim.set({ tileStatus: "live" });
       physics.floor.position.y = -51;
       physics.floor.aabbNeedsUpdate = true;
+      for (const p of physics.patches) {
+        p.body.position.y = -100;
+        p.body.aabbNeedsUpdate = true;
+        p.sampled = 0;
+      }
       physics.chassis.position.y = hit.point.y + 1.2;
       physics.chassis.velocity.setZero();
+      physics.chassis.wakeUp();
     }
     if (sim.get().tileStatus !== "live") return;
     physics.terrainReady = !!hit;
+    sim.set({ surfaceElevation: hit?.point.y ?? null });
     if (hit) {
+      if (Math.abs(physics.support.position.y - (hit.point.y - 0.28)) > 0.05)
+        physics.chassis.wakeUp();
       physics.support.position.set(
         physics.chassis.position.x,
         hit.point.y - 0.28,

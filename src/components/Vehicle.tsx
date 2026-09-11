@@ -111,6 +111,9 @@ export function Vehicle({ physics }: { physics: Physics }) {
       const { x, z } = chassis.position;
       const d = last.current.distanceTo(vehiclePose.position);
       sim.set({
+        elevation: chassis.position.y,
+        groundedWheels: vehicle.wheelInfos.filter((w) => w.raycastResult.hasHit)
+          .length,
         x,
         z,
         speed: Math.hypot(chassis.velocity.x, chassis.velocity.z) * 2.236936,

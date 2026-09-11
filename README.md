@@ -26,7 +26,7 @@ VITE_ORIGIN_HEIGHT=0
 
 Enable Google Map Tiles API and billing for the direct key. Restrict the key by website referrers and API. All `VITE_` values are visible to the browser; never put server secrets in them. Cesium ion access must include a Google Photorealistic 3D Tiles asset. The default asset ID is configurable. Production builds bake these values into JavaScript; configure them before `npm run build`.
 
-**Live imagery was not verified with an authenticated account in this delivery.** An enabled credential is needed to validate coverage, alignment, attribution, terrain contact, quotas, and account-specific access. A failed initial request retains the usable schematic environment. Partial failures after live imagery starts retain the live terrain and existing road colliders.
+**Authenticated Google Photorealistic 3D Tiles are configured through Cesium ion asset 2275207.** Local browser validation confirmed imagery, attribution, and four-wheel ground contact at campus landmark spawns. The supplied token is stored only in ignored `.env.local` and is embedded in the browser bundle at build time. Live rendering does not establish surveyed accuracy or guarantee artifact-free coverage. A failed initial request retains the usable schematic environment. Partial failures after live imagery starts retain the live terrain and existing road colliders.
 
 ## Controls
 
@@ -66,14 +66,14 @@ The origin is **28.0587° N, 82.4139° W**. CPU-side doubles transform WGS84 ECE
 
 A conservative rectangle stays inside Fowler Avenue (south), Fletcher Avenue (north), Bruce B. Downs Boulevard (west), and the westernmost Bull Run curve (east): south 28.05465, north 28.0690, west −82.42585, east −82.4056. It deliberately omits a narrow eastern strip rather than include off-campus driving. This is a simulation boundary, not a surveyed university property polygon. Physics walls and visual clipping enforce it. Google hierarchy traversal may still request ancestor tiles covering a larger area; clipping does not claim to prevent all out-of-bounds network requests.
 
-Fallback terrain is flat. Leroy Collins Boulevard, Alumni Drive, Holly Drive, and Genshaft Drive have independent static road patches no longer than 16 m. In live mode, five nearby patches are sampled per 300 ms, kept only in RAM, and fitted to visible tile heights. A small support collider follows the visible surface near the car to bridge patch gaps. The broad campus fallback floor is lowered only once a local tile surface can be resolved.
+Fallback terrain is flat. Leroy Collins Boulevard, Alumni Drive, Holly Drive, and Genshaft Drive have independent static road patches no longer than 16 m. In live mode, five nearby patches are sampled per 300 ms, kept only in RAM, and fitted to visible tile heights. A small support collider follows the visible surface near the car to bridge patch gaps. The broad campus fallback floor and unsampled flat road patches are lowered only once a local tile surface can be resolved. Landmark resets snap to the live surface once it loads; terrain height changes wake the suspension.
 
 The colliders are simplified, horizontal patches. They are suitable for a campus prototype, not a surveyed digital twin or a physically accurate road-slope model. Overhangs, trees, steep slopes, coarse LOD and tile gaps can cause inaccurate ray hits. Production deployment with credentials should calibrate ellipsoid height, audit the four roads, and replace problematic areas with independently sourced surveyed road meshes. Building and vegetation obstacle collisions, traffic, navigation routes, and multiplayer are outside this implementation. Camera geometry occlusion is not implemented.
 
 ## Rendering and performance
 
 - Tile traversal uses camera frustum and screen-space error: 8 px balanced / 3 px high.
-- 256 MiB tile cache cap, 192 MiB low-water target; 250 / 180 item limits. These bound tile resources, not total browser memory.
+- 512 MiB tile cache target, 384 MiB low-water target; 1,200 / 900 item limits. In-flight downloads can briefly exceed the byte target. These bound tile resources, not total browser memory.
 - Six simultaneous tile downloads and two parse jobs.
 - Camera far plane 1,800 m; campus clipping planes and distance fog.
 - Fallback roads/buildings/vegetation use merged geometry to reduce draw calls.
@@ -90,7 +90,7 @@ npm test
 npm run build
 ```
 
-Tests validate local axes, all landmark spawns, ray-ground contact, forward acceleration, braking and reverse. Browser checks cover rendering, modal controls, map jumps, runtime logs, and WebMCP success/error handling. Credential-free testing cannot establish Google tile coverage or correctness of live road sampling.
+Tests validate local axes, all landmark spawns, ray-ground contact, forward acceleration, braking and reverse. Browser checks cover rendering, modal controls, map jumps, runtime logs, and WebMCP success/error handling. Authenticated checks additionally cover visible Google imagery, copyright attribution, landmark surface placement, and four-wheel contact. Photogrammetry has visible artifacts around trees and overhangs; full-route terrain validation is still recommended.
 
 ## Data and service references
 

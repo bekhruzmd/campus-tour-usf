@@ -39,6 +39,10 @@ export function useWebMCP() {
             zone: s.zone,
             paused: s.paused,
             mode: s.tileStatus,
+            localPosition: { x: s.x, y: s.elevation, z: s.z },
+            surfaceElevation: s.surfaceElevation,
+            groundedWheels: s.groundedWheels,
+            tiles: s.tileDiagnostics,
           };
         },
       },
