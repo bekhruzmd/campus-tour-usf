@@ -1,4 +1,5 @@
 import { project } from "./explorer";
+import rawPassioData from "./passioGoData.json";
 
 export type ShuttleStop = {
   id: string;
@@ -6,6 +7,8 @@ export type ShuttleStop = {
   code: string;
   x: number;
   z: number;
+  latitude: number;
+  longitude: number;
 };
 
 export type ShuttleRoute = {
@@ -24,6 +27,7 @@ export type ActiveShuttleBus = {
   busNumber: string;
   progress: number; // 0 to 1 along waypoints
   speedMps: number;
+  speedMph?: number;
   nextStopName: string;
   x: number;
   z: number;
@@ -31,8 +35,10 @@ export type ActiveShuttleBus = {
   isLive?: boolean;
   latitude?: number;
   longitude?: number;
+  paxLoad?: number; // 0-100% load from Passio GO
   occupancyStatus?: string;
   lastUpdated?: string;
+  routeColor?: string;
 };
 
 export type BullRunnerFeedStatus = {
@@ -45,110 +51,63 @@ export type BullRunnerFeedStatus = {
   statusText: string;
 };
 
-export const SHUTTLE_STOPS: ShuttleStop[] = [
-  { id: "msc_stop", name: "Marshall Student Center Loop", code: "MSC-STOP", ...project(28.0642, -82.4140) },
-  { id: "lib_stop", name: "USF Library Transit Hub", code: "LIB-STOP", ...project(28.0598, -82.4132) },
-  { id: "beard_stop", name: "Beard Garage & Engineering", code: "ENG-STOP", ...project(28.0585, -82.4168) },
-  { id: "collins_stop", name: "Collins Garage & Business", code: "BSN-STOP", ...project(28.0615, -82.4092) },
-  { id: "crescent_stop", name: "Crescent Hill & Cooper", code: "CPR-STOP", ...project(28.0628, -82.4158) },
-  { id: "yng_stop", name: "Yuengling Center Park-n-Ride", code: "YNG-STOP", ...project(28.0585, -82.4052) },
-  { id: "village_stop", name: "The Village (The Hub & Fit)", code: "VIL-STOP", ...project(28.0672, -82.4120) },
-  { id: "health_stop", name: "USF Health Clinics & Medicine", code: "MED-STOP", ...project(28.0605, -82.4215) },
-];
+// Build official Passio GO Stop lookup table
+const stopMap = new Map<string, ShuttleStop>();
+for (const s of rawPassioData.stops) {
+  const projected = project(s.lat, s.lng);
+  const stopObj: ShuttleStop = {
+    id: s.id,
+    name: s.name,
+    code: `ST-${s.id}`,
+    x: projected.x,
+    z: projected.z,
+    latitude: s.lat,
+    longitude: s.lng,
+  };
+  stopMap.set(s.id, stopObj);
+}
 
-export const SHUTTLE_ROUTES: ShuttleRoute[] = [
-  {
-    id: "route_a",
-    name: "Route A — Campus Core Circulator",
-    color: "#006747", // USF Green
-    textColor: "#ffffff",
-    description: "Connects Library, Marshall Center, The Village, and Beard Garage every 7-10 minutes.",
-    stops: [
-      SHUTTLE_STOPS[1], // Library
-      SHUTTLE_STOPS[0], // MSC
-      SHUTTLE_STOPS[6], // The Village
-      SHUTTLE_STOPS[2], // Beard Garage
-    ],
-    waypoints: [
-      project(28.0598, -82.4132),
-      project(28.0615, -82.4135),
-      project(28.0642, -82.4140),
-      project(28.0670, -82.4138),
-      project(28.0672, -82.4120),
-      project(28.0650, -82.4155),
-      project(28.0615, -82.4165),
-      project(28.0585, -82.4168),
-      project(28.0582, -82.4145),
-      project(28.0598, -82.4132),
-    ],
-  },
-  {
-    id: "route_b",
-    name: "Route B — Commuter Park-n-Ride Express",
-    color: "#cfc096", // USF Gold
-    textColor: "#123828",
-    description: "Direct shuttle from Yuengling Center outer parking lots to Collins Garage, Business, and Library.",
-    stops: [
-      SHUTTLE_STOPS[5], // Yuengling Outer Lots
-      SHUTTLE_STOPS[3], // Collins Garage / Business
-      SHUTTLE_STOPS[1], // Library
-      SHUTTLE_STOPS[0], // MSC
-    ],
-    waypoints: [
-      project(28.0585, -82.4052),
-      project(28.0605, -82.4060),
-      project(28.0615, -82.4092),
-      project(28.0620, -82.4120),
-      project(28.0642, -82.4140),
-      project(28.0615, -82.4135),
-      project(28.0598, -82.4132),
-      project(28.0585, -82.4100),
-      project(28.0585, -82.4052),
-    ],
-  },
-  {
-    id: "route_c",
-    name: "Route C — USF Health & Medical Express",
-    color: "#1d70b8", // Blue
-    textColor: "#ffffff",
-    description: "Serves Morsani College of Medicine, Moffitt Cancer Center, and Nursing.",
-    stops: [
-      SHUTTLE_STOPS[7], // USF Health
-      SHUTTLE_STOPS[2], // Beard Garage
-      SHUTTLE_STOPS[1], // Library
-    ],
-    waypoints: [
-      project(28.0605, -82.4215),
-      project(28.0585, -82.4210),
-      project(28.0585, -82.4168),
-      project(28.0598, -82.4132),
-      project(28.0610, -82.4170),
-      project(28.0605, -82.4215),
-    ],
-  },
-  {
-    id: "route_d",
-    name: "Route D — Crescent Hill & Athletics",
-    color: "#5b2c6f", // USF Purple Route
-    textColor: "#ffffff",
-    description: "Circulates through Crescent Hill, Athletic District, Rec Center, and Marshall Center.",
-    stops: [
-      SHUTTLE_STOPS[4], // Crescent Hill
-      SHUTTLE_STOPS[0], // MSC
-      SHUTTLE_STOPS[5], // Yuengling
-    ],
-    waypoints: [
-      project(28.0628, -82.4158),
-      project(28.0642, -82.4140),
-      project(28.0620, -82.4100),
-      project(28.0585, -82.4052),
-      project(28.0585, -82.4120),
-      project(28.0628, -82.4158),
-    ],
-  },
-];
+// All official Passio GO stops
+export const SHUTTLE_STOPS: ShuttleStop[] = Array.from(stopMap.values());
 
-// Calculate interpolated position along a route's waypoints
+// Helper for contrast text color
+function getContrastColor(hexColor: string): string {
+  const hex = hexColor.replace("#", "");
+  const r = parseInt(hex.substring(0, 2), 16) || 0;
+  const g = parseInt(hex.substring(2, 4), 16) || 0;
+  const b = parseInt(hex.substring(4, 6), 16) || 0;
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#102a23" : "#ffffff";
+}
+
+// Convert Passio GO routes with real waypoints & real stops
+export const SHUTTLE_ROUTES: ShuttleRoute[] = rawPassioData.routes
+  .filter((r) => r.id !== "74822" && r.points.length > 0) // Filter out redundant detour route
+  .map((r) => {
+    // Map waypoint lat/lng into 2D canvas coordinates
+    const waypoints = r.points.map((pt) => project(pt.lat, pt.lng));
+
+    // Map stop IDs into actual ShuttleStop objects
+    const stops: ShuttleStop[] = [];
+    for (const sid of r.stopIds) {
+      const found = stopMap.get(sid);
+      if (found && !stops.some((existing) => existing.id === found.id)) {
+        stops.push(found);
+      }
+    }
+
+    return {
+      id: r.id,
+      name: `Bull Runner ${r.name}`,
+      color: r.color,
+      textColor: getContrastColor(r.color),
+      description: `Official USF Passio GO Route (${stops.length} campus stops, ${waypoints.length} GPS checkpoints)`,
+      stops,
+      waypoints,
+    };
+  });
+
+// Interpolate position along waypoint polylines
 export function getPositionOnRoute(
   waypoints: { x: number; z: number }[],
   progress: number
@@ -166,6 +125,8 @@ export function getPositionOnRoute(
     segments.push({ a, b, len });
     totalLen += len;
   }
+
+  if (totalLen === 0) return { x: waypoints[0].x, z: waypoints[0].z, heading: 0 };
 
   let targetDist = (progress % 1) * totalLen;
   if (targetDist < 0) targetDist += totalLen;
@@ -185,110 +146,197 @@ export function getPositionOnRoute(
   return { x: waypoints[0].x, z: waypoints[0].z, heading: 0 };
 }
 
-export const PASSIO_GTFS_VEHICLE_POSITIONS_URL =
+/**
+ * Official Passio GO API Endpoints
+ * Documentation: https://passiogo.readthedocs.io/en/main/
+ * Agency System ID: 2343 (Bull Runner at USF)
+ */
+export const PASSIO_GO_SYSTEM_ID = "2343";
+export const PASSIO_GO_BUSES_URL = "https://passiogo.com/mapGetData.php?getBuses=2";
+export const PASSIO_GTFS_FALLBACK_URL =
   "https://passio3.com/usf/passioTransit/gtfs/realtime/vehiclePositions.json";
 
 /**
- * Connects directly to the live GTFS-RT feed deployed by CUTR / Passio GO for USF Bull Runner.
- * Endpoint: https://passio3.com/usf/passioTransit/gtfs/realtime/vehiclePositions.json
+ * Connects directly to the live Passio GO API for USF Bull Runner (System #2343).
+ * Fetches real-time bus locations, speeds, courses, routes, and passenger loads.
  */
 export async function fetchLiveBullRunnerPositions(): Promise<{
   buses: ActiveShuttleBus[];
   status: BullRunnerFeedStatus;
 }> {
   const startTime = Date.now();
+
+  // 1. Primary: Direct Passio GO API (POST https://passiogo.com/mapGetData.php?getBuses=2)
   try {
-    const res = await fetch(PASSIO_GTFS_VEHICLE_POSITIONS_URL, {
+    const res = await fetch(PASSIO_GO_BUSES_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ s0: PASSIO_GO_SYSTEM_ID, sA: 1 }),
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const latency = Date.now() - startTime;
+      const rawBuses = data?.buses;
+
+      const liveBuses: ActiveShuttleBus[] = [];
+
+      if (rawBuses && typeof rawBuses === "object") {
+        for (const [busKey, busList] of Object.entries(rawBuses)) {
+          if (busKey === "-1" || !Array.isArray(busList)) continue;
+
+          for (const b of busList as any[]) {
+            const lat = parseFloat(b.latitude);
+            const lng = parseFloat(b.longitude);
+            if (isNaN(lat) || isNaN(lng)) continue;
+
+            const projected = project(lat, lng);
+            const courseDeg = parseFloat(b.calculatedCourse) || 0;
+            const headingRad = (courseDeg * Math.PI) / 180;
+            const speedMph = parseFloat(b.speed) || 0;
+            const paxLoad = parseFloat(b.paxLoad100) || 0;
+
+            // Find matching route name
+            const matchingRoute = SHUTTLE_ROUTES.find(
+              (r) => r.id === String(b.routeId) || r.name.toLowerCase().includes(String(b.route || "").toLowerCase())
+            );
+
+            liveBuses.push({
+              id: String(b.busId || busKey),
+              routeId: matchingRoute ? matchingRoute.id : String(b.routeId || "71754"),
+              busNumber: String(b.busName || `Bull Runner #${b.busId}`),
+              progress: 0,
+              speedMps: speedMph * 0.44704,
+              speedMph: Math.round(speedMph),
+              nextStopName: b.route ? `${b.route} In-Service` : "Campus Transit Loop",
+              x: projected.x,
+              z: projected.z,
+              heading: headingRad,
+              isLive: true,
+              latitude: lat,
+              longitude: lng,
+              paxLoad: Math.min(100, Math.max(0, paxLoad)),
+              occupancyStatus:
+                paxLoad > 80 ? "FULL" : paxLoad > 50 ? "MODERATE_LOAD" : "SEATS_AVAILABLE",
+              lastUpdated: b.created || new Date().toLocaleTimeString(),
+              routeColor: b.color || matchingRoute?.color || "#006747",
+            });
+          }
+        }
+      }
+
+      if (liveBuses.length > 0) {
+        return {
+          buses: liveBuses,
+          status: {
+            isConnected: true,
+            isLiveFeed: true,
+            lastPolled: new Date(),
+            activeVehiclesCount: liveBuses.length,
+            feedLatencyMs: latency,
+            feedSource: "Passio GO Live API (System #2343 • Bull Runner at USF)",
+            statusText: `Passio GO Online • ${liveBuses.length} Active Shuttles on Campus`,
+          },
+        };
+      }
+
+      // Live Passio GO responded, but 0 buses currently out on campus (off-peak/night/weekend)
+      return {
+        buses: [],
+        status: {
+          isConnected: true,
+          isLiveFeed: false,
+          lastPolled: new Date(),
+          activeVehiclesCount: 0,
+          feedLatencyMs: latency,
+          feedSource: "Passio GO Live API (System #2343 • Bull Runner at USF)",
+          statusText: "Passio GO Online • Off-Peak Schedule Active (Night/Weekend)",
+        },
+      };
+    }
+  } catch (err) {
+    // Continue to fallback
+  }
+
+  // 2. Secondary Fallback: Passio GTFS-RT feed
+  try {
+    const res = await fetch(PASSIO_GTFS_FALLBACK_URL, {
       headers: { Accept: "application/json" },
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
+    if (res.ok) {
+      const data = await res.json();
+      const latency = Date.now() - startTime;
+      const entities = Array.isArray(data?.entity) ? data.entity : [];
 
-    const data = await res.json();
-    const latency = Date.now() - startTime;
-    const entities = Array.isArray(data?.entity) ? data.entity : [];
+      if (entities.length > 0) {
+        const liveBuses: ActiveShuttleBus[] = entities.map((item: any) => {
+          const vp = item.vehicle || {};
+          const pos = vp.position || {};
+          const veh = vp.vehicle || {};
 
-    if (entities.length > 0) {
-      const liveBuses: ActiveShuttleBus[] = entities.map((item: any) => {
-        const vp = item.vehicle || {};
-        const pos = vp.position || {};
-        const trip = vp.trip || {};
-        const veh = vp.vehicle || {};
+          const lat = typeof pos.latitude === "number" ? pos.latitude : 28.0642;
+          const lon = typeof pos.longitude === "number" ? pos.longitude : -82.4140;
+          const projected = project(lat, lon);
 
-        const lat = typeof pos.latitude === "number" ? pos.latitude : 28.0642;
-        const lon = typeof pos.longitude === "number" ? pos.longitude : -82.4140;
-        const projected = project(lat, lon);
+          const bearingDeg = typeof pos.bearing === "number" ? pos.bearing : 0;
+          const headingRad = (bearingDeg * Math.PI) / 180;
+          const speedMph = Math.round((typeof pos.speed === "number" ? pos.speed : 0) * 2.23694);
 
-        // Heading in radians (Passio supplies bearing in degrees 0-360)
-        const bearingDeg = typeof pos.bearing === "number" ? pos.bearing : 0;
-        const headingRad = (bearingDeg * Math.PI) / 180;
-
-        let routeId = "route_a";
-        const rawRoute = String(trip.route_id || "").toLowerCase();
-        if (rawRoute.includes("b")) routeId = "route_b";
-        else if (rawRoute.includes("c")) routeId = "route_c";
-        else if (rawRoute.includes("d")) routeId = "route_d";
+          return {
+            id: String(item.id || veh.id || Math.random()),
+            routeId: SHUTTLE_ROUTES[0].id,
+            busNumber: veh.label || veh.id || `Bull Runner #${item.id}`,
+            progress: 0,
+            speedMps: typeof pos.speed === "number" ? pos.speed : 0,
+            speedMph,
+            nextStopName: "Active Route",
+            x: projected.x,
+            z: projected.z,
+            heading: headingRad,
+            isLive: true,
+            latitude: lat,
+            longitude: lon,
+            paxLoad: 25,
+            occupancyStatus: vp.occupancy_status || "SEATS_AVAILABLE",
+            lastUpdated: new Date().toLocaleTimeString(),
+            routeColor: SHUTTLE_ROUTES[0].color,
+          };
+        });
 
         return {
-          id: String(item.id || veh.id || Math.random()),
-          routeId,
-          busNumber: veh.label || veh.id || `Bull Runner #${item.id}`,
-          progress: 0,
-          speedMps: typeof pos.speed === "number" ? pos.speed : 0,
-          nextStopName: "Active Route",
-          x: projected.x,
-          z: projected.z,
-          heading: headingRad,
-          isLive: true,
-          latitude: lat,
-          longitude: lon,
-          occupancyStatus: vp.occupancy_status || "MANY_SEATS_AVAILABLE",
-          lastUpdated: new Date().toLocaleTimeString(),
+          buses: liveBuses,
+          status: {
+            isConnected: true,
+            isLiveFeed: true,
+            lastPolled: new Date(),
+            activeVehiclesCount: liveBuses.length,
+            feedLatencyMs: latency,
+            feedSource: "Passio GO Telemetry (GTFS-RT Gateway)",
+            statusText: `Passio GO Online • ${liveBuses.length} Active Shuttles on Campus`,
+          },
         };
-      });
-
-      return {
-        buses: liveBuses,
-        status: {
-          isConnected: true,
-          isLiveFeed: true,
-          lastPolled: new Date(),
-          activeVehiclesCount: liveBuses.length,
-          feedLatencyMs: latency,
-          feedSource: "Passio GO AVL (CUTR GTFS-RT Realtime Feed)",
-          statusText: `Live Feed Online • ${liveBuses.length} Active Shuttles on Campus`,
-        },
-      };
+      }
     }
-
-    // Off-peak / night / weekend hours (0 buses dispatched right now)
-    return {
-      buses: [],
-      status: {
-        isConnected: true,
-        isLiveFeed: false,
-        lastPolled: new Date(),
-        activeVehiclesCount: 0,
-        feedLatencyMs: latency,
-        feedSource: "Passio GO AVL (CUTR GTFS-RT Realtime Feed)",
-        statusText: "Live Feed Online • Off-Peak Schedule Active (Night/Weekend)",
-      },
-    };
   } catch (err: any) {
-    return {
-      buses: [],
-      status: {
-        isConnected: false,
-        isLiveFeed: false,
-        lastPolled: new Date(),
-        activeVehiclesCount: 0,
-        feedLatencyMs: Date.now() - startTime,
-        feedSource: "Passio GO AVL (Offline)",
-        statusText: `Live Feed Sync: Fallback Circulators Active (${err?.message || "Network"})`,
-      },
-    };
+    // Network error
   }
+
+  return {
+    buses: [],
+    status: {
+      isConnected: false,
+      isLiveFeed: false,
+      lastPolled: new Date(),
+      activeVehiclesCount: 0,
+      feedLatencyMs: Date.now() - startTime,
+      feedSource: "Passio GO Live API (Offline)",
+      statusText: "Passio GO Sync: Fallback Circulators Active",
+    },
+  };
 }

@@ -381,15 +381,35 @@ export default function ExplorerMap({
         }
       }
 
-      // Render Bull Runner Shuttles (Buses & Stops)
+      // Render Bull Runner Shuttles (Passio GO Routes, Stops & Buses)
       if (shuttlesRef.current) {
-        // Stops
+        // Draw official Passio GO route path polylines
+        for (const route of SHUTTLE_ROUTES) {
+          if (!route.waypoints || route.waypoints.length < 2) continue;
+          ctx.save();
+          ctx.beginPath();
+          const first = screen(route.waypoints[0].x, route.waypoints[0].z);
+          ctx.moveTo(first.x, first.y);
+          for (let i = 1; i < route.waypoints.length; i++) {
+            const pt = screen(route.waypoints[i].x, route.waypoints[i].z);
+            ctx.lineTo(pt.x, pt.y);
+          }
+          ctx.strokeStyle = route.color;
+          ctx.globalAlpha = 0.35;
+          ctx.lineWidth = 3;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Official Stops
         for (const stop of SHUTTLE_STOPS) {
           const sp = screen(stop.x, stop.z);
           if (sp.x < -20 || sp.x > size.w + 20 || sp.y < -20 || sp.y > size.h + 20) continue;
 
           ctx.beginPath();
-          ctx.arc(sp.x, sp.y, 6, 0, Math.PI * 2);
+          ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2);
           ctx.fillStyle = "#006747";
           ctx.fill();
           ctx.strokeStyle = "#fff";
@@ -397,10 +417,10 @@ export default function ExplorerMap({
           ctx.stroke();
         }
 
-        // Active Buses (Live GTFS-RT AVL with Route Simulation Fallback)
+        // Active Buses (Live Passio GO AVL with Route Simulation Fallback)
         const liveBuses = liveBusesRef.current;
         if (liveBuses.length > 0) {
-          // Render Real Live GPS Shuttles from Passio GO AVL
+          // Render Real Live GPS Shuttles from Passio GO Live Feed
           liveBuses.forEach((bus) => {
             const bp = screen(bus.x, bus.z);
             if (bp.x >= -40 && bp.x <= size.w + 40 && bp.y >= -40 && bp.y <= size.h + 40) {
@@ -409,7 +429,7 @@ export default function ExplorerMap({
               ctx.rotate(bus.heading);
 
               // Live vehicle beacon ring
-              ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+              ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
               ctx.lineWidth = 2;
               ctx.beginPath();
               ctx.arc(0, 0, 22, 0, Math.PI * 2);
@@ -420,8 +440,8 @@ export default function ExplorerMap({
               ctx.shadowBlur = 8;
               ctx.shadowOffsetY = 3;
 
-              // Bus chassis (USF Green)
-              ctx.fillStyle = "#006747";
+              // Bus chassis (Route Color)
+              ctx.fillStyle = bus.routeColor || "#006747";
               ctx.beginPath();
               ctx.roundRect(-10, -18, 20, 36, 4);
               ctx.fill();
@@ -444,9 +464,11 @@ export default function ExplorerMap({
               ctx.textAlign = "center";
               ctx.fillText(bus.busNumber.toUpperCase(), bp.x, bp.y - 20);
 
+              const speedVal = bus.speedMph ?? Math.round(bus.speedMps * 2.237);
+              const paxText = bus.paxLoad !== undefined && bus.paxLoad > 0 ? ` • ${Math.round(bus.paxLoad)}% FULL` : "";
               ctx.font = '800 7px "DM Sans",sans-serif';
               ctx.fillStyle = "#10b981";
-              ctx.fillText(`LIVE • ${Math.round(bus.speedMps * 2.237)} MPH`, bp.x, bp.y - 11);
+              ctx.fillText(`LIVE • ${speedVal} MPH${paxText}`, bp.x, bp.y - 11);
             }
           });
         } else {

@@ -598,29 +598,29 @@ export default function CommuterCommandCenter({
                 <div className="feed-status-header">
                   <div className="feed-status-left">
                     <span className={`live-feed-dot ${shuttleFeedStatus?.isConnected ? "online" : "offline"}`} />
-                    <span className="feed-title">USF BULL RUNNER LIVE GTFS-RT</span>
-                    <span className="feed-source-pill">Passio GO AVL (CUTR)</span>
+                    <span className="feed-title">USF BULL RUNNER LIVE PASSIO GO</span>
+                    <span className="feed-source-pill">Passio GO (System #2343)</span>
                   </div>
                   <button
                     className="feed-refresh-btn"
                     onClick={refreshBullRunner}
                     disabled={isRefreshingFeed}
-                    title="Poll latest vehicle positions from GTFS-RT endpoint"
+                    title="Poll latest vehicle positions from Passio GO API"
                   >
                     <RefreshCw size={12} className={isRefreshingFeed ? "spinning" : ""} />
-                    <span>{isRefreshingFeed ? "Syncing..." : "Refresh Live Feed"}</span>
+                    <span>{isRefreshingFeed ? "Syncing..." : "Refresh Passio Feed"}</span>
                   </button>
                 </div>
 
                 <div className="feed-status-body">
                   <div className="feed-metric">
                     <span className="metric-label">FEED STATUS</span>
-                    <strong>{shuttleFeedStatus?.statusText || "Connecting to Passio GO GTFS realtime..."}</strong>
+                    <strong>{shuttleFeedStatus?.statusText || "Connecting to Passio GO API..."}</strong>
                   </div>
                   <div className="feed-metric-row">
                     <span>Active Vehicles: <strong>{shuttleFeedStatus?.activeVehiclesCount ?? 0}</strong></span>
                     <span>Feed Latency: <strong>{shuttleFeedStatus ? `${shuttleFeedStatus.feedLatencyMs} ms` : "..."}</strong></span>
-                    <span>Source: <code>passio3.com/usf/.../vehiclePositions.json</code></span>
+                    <span>API Endpoint: <code>passiogo.com/mapGetData.php (System #2343)</code></span>
                   </div>
                 </div>
               </div>
