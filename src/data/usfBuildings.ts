@@ -491,6 +491,27 @@ export const USF_BUILDINGS_CATALOG: USFBuilding[] = [
     ],
   },
   {
+    id: "flats4200",
+    osmName: "The Flats at 4200",
+    code: "FLAT",
+    name: "The Flats at 4200",
+    shortName: "Flats at 4200",
+    category: "Housing & Dorms",
+    description:
+      "Premier off-campus student residential community located at 4200 E Fletcher Ave directly across from the USF campus, served by Bull Runner transit routes.",
+    freshmanTip:
+      "Bull Runner shuttle routes provide fast, direct transit straight to the Marshall Student Center and Library without needing to drive.",
+    sourceUrl: "https://www.flatsat4200.com/",
+    hours: "Leasing Office: Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["flats", "4200", "flats at 4200", "apartments", "housing", "student housing"],
+    roomsAndServices: [
+      { name: "Resort-Style Swimming Pool & Sundeck", floor: "Courtyard", type: "amenity", details: "Outdoor lounge chairs, grilling stations, and cabanas" },
+      { name: "24-Hour Fitness Center & Yoga Studio", floor: "Clubhouse", type: "amenity", details: "Cardio equipment, free weights, and cross-training zone" },
+      { name: "Academic Computer Lounge & Study Suites", floor: "Clubhouse", type: "study", details: "High-speed Wi-Fi, private study pods, and free printing" },
+      { name: "Bull Runner Shuttle Pickup", floor: "Fletcher Ave & 42nd St", type: "service", details: "Direct university shuttle stop connecting to campus core" },
+    ],
+  },
+  {
     id: "botanical",
     osmName: "Botanical Gardens Office",
     code: "BOT",

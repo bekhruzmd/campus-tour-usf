@@ -893,59 +893,123 @@ export default function ExplorerMap({
       }
     };
 
+    const activePointers = new Map<number, { x: number; y: number }>();
+    let initialPinchDist: number | null = null;
+    let initialScale: number = camera.scale;
+
     const down = (e: PointerEvent) => {
-      canvas.setPointerCapture(e.pointerId);
-      drag = {
-        x: e.offsetX,
-        y: e.offsetY,
-        startX: e.offsetX,
-        startY: e.offsetY,
-      };
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {}
+      activePointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+
+      if (activePointers.size === 1) {
+        drag = {
+          x: e.offsetX,
+          y: e.offsetY,
+          startX: e.offsetX,
+          startY: e.offsetY,
+        };
+      } else if (activePointers.size === 2) {
+        // Start two-finger pinch zoom
+        const pts = Array.from(activePointers.values());
+        initialPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        initialScale = camera.scale;
+        drag = null;
+      }
     };
 
     const move = (e: PointerEvent) => {
-      if (!drag) return;
-      if (Math.hypot(e.offsetX - drag.startX, e.offsetY - drag.startY) > 5) {
-        overview = true;
-        camera.x -= (e.offsetX - drag.x) / camera.scale;
-        camera.z -= (e.offsetY - drag.y) / (camera.scale * 0.78);
-        dirty = true;
-      }
-      drag.x = e.offsetX;
-      drag.y = e.offsetY;
-    };
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
 
-    const up = (e: PointerEvent) => {
-      if (!drag) return;
-      const click =
-        Math.hypot(e.offsetX - drag.startX, e.offsetY - drag.startY) < 6;
-      drag = null;
-      if (!click) return;
+      // Two-finger pinch-to-zoom
+      if (activePointers.size === 2 && initialPinchDist && initialPinchDist > 8) {
+        const pts = Array.from(activePointers.values());
+        const currentDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        const factor = currentDist / initialPinchDist;
+        const newScale = Math.min(2.5, Math.max(0.2, initialScale * factor));
 
-      // Click on landmark tag
-      const tag = tags.find(
-        (t) =>
-          e.offsetX >= t.x &&
-          e.offsetX <= t.x + t.w &&
-          e.offsetY >= t.y &&
-          e.offsetY <= t.y + t.h,
-      );
-      if (tag) {
-        callbacks.current.onSelect(tag.place);
+        if (Math.abs(newScale - camera.scale) > 0.005) {
+          overview = true;
+          camera.scale = newScale;
+          dirty = true;
+        }
         return;
       }
 
-      // Click on any building footprint
-      const p = point(e.offsetX, e.offsetY);
-      const b = buildings.find((b) => inPolygon(p.x, p.z, b.points));
-      if (b) {
-        callbacks.current.onBuildingSelect(b);
+      // Single-finger drag pan
+      if (activePointers.size === 1 && drag) {
+        if (Math.hypot(e.offsetX - drag.startX, e.offsetY - drag.startY) > 5) {
+          overview = true;
+          camera.x -= (e.offsetX - drag.x) / camera.scale;
+          camera.z -= (e.offsetY - drag.y) / (camera.scale * 0.78);
+          dirty = true;
+        }
+        drag.x = e.offsetX;
+        drag.y = e.offsetY;
+      }
+    };
+
+    const up = (e: PointerEvent) => {
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {}
+
+      const wasSingle = activePointers.size === 1;
+      activePointers.delete(e.pointerId);
+
+      if (activePointers.size < 2) {
+        initialPinchDist = null;
+      }
+
+      if (wasSingle && drag) {
+        const click =
+          Math.hypot(e.offsetX - drag.startX, e.offsetY - drag.startY) < 6;
+        drag = null;
+        if (!click) return;
+
+        // Click on landmark tag
+        const tag = tags.find(
+          (t) =>
+            e.offsetX >= t.x &&
+            e.offsetX <= t.x + t.w &&
+            e.offsetY >= t.y &&
+            e.offsetY <= t.y + t.h,
+        );
+        if (tag) {
+          callbacks.current.onSelect(tag.place);
+          return;
+        }
+
+        // Click on any building footprint with a genuine real name (no made-up names)
+        const p = point(e.offsetX, e.offsetY);
+        const b = buildings.find((b) => inPolygon(p.x, p.z, b.points));
+        if (b && b.name && b.name.trim() !== "") {
+          callbacks.current.onBuildingSelect(b);
+        }
+      } else {
+        drag = null;
+      }
+    };
+
+    // Wheel and trackpad zoom
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      const nextScale = Math.min(2.5, Math.max(0.2, camera.scale * zoomFactor));
+      if (Math.abs(nextScale - camera.scale) > 0.005) {
+        overview = true;
+        camera.scale = nextScale;
+        dirty = true;
       }
     };
 
     canvas.addEventListener("pointerdown", down);
     canvas.addEventListener("pointermove", move);
     canvas.addEventListener("pointerup", up);
+    canvas.addEventListener("pointercancel", up);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
     raf = requestAnimationFrame(frame);
 
     return () => {
@@ -954,6 +1018,8 @@ export default function ExplorerMap({
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
+      canvas.removeEventListener("pointercancel", up);
+      canvas.removeEventListener("wheel", onWheel);
       held.clear();
       map.width = 0;
       map.height = 0;

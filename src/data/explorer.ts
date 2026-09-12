@@ -40,16 +40,27 @@ export type ProjectedBuilding = {
   profile: USFBuilding;
 };
 
-export const buildings: ProjectedBuilding[] = osm.buildings.map((b, i) => {
+export const buildings: ProjectedBuilding[] = osm.buildings.map((b) => {
   const points = b.points.map(([lat, lon]) => project(lat, lon));
-  const rawName = b.name || "";
-  const label = rawName || `Building ${i + 1}`;
-  const profile = getBuildingProfile(rawName || `Building ${i + 1}`);
+  const rawName = b.name ? b.name.trim() : "";
+  const profile = rawName
+    ? getBuildingProfile(rawName)
+    : {
+        id: `bld_${b.id}`,
+        osmName: "",
+        code: "",
+        name: "",
+        shortName: "",
+        category: "Academics" as const,
+        description: "",
+        freshmanTip: "",
+        roomsAndServices: [],
+      };
 
   return {
     id: b.id,
     name: rawName,
-    label,
+    label: rawName,
     height: b.height || 8,
     points,
     x: points.reduce((s, p) => s + p.x, 0) / points.length,
