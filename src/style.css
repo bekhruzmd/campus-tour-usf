@@ -1480,8 +1480,24 @@ footer a {
 }
 
 /* ==========================================================================
-   Responsive Adaptations
+   Responsive Adaptations & Mobile-First Controls
    ========================================================================== */
+.mobile-drawer-backdrop {
+  display: none;
+}
+
+.mobile-drawer-top {
+  display: none;
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+.virtual-dpad {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .header-status {
     display: none;
@@ -1499,64 +1515,160 @@ footer a {
 }
 
 @media (max-width: 768px) {
+  /* Mobile Header */
   header {
-    height: 70px;
-    padding: 0 16px;
-    gap: 12px;
+    height: 56px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .brand small {
+    display: none;
   }
 
   .brand strong {
-    font-size: 19px;
+    font-size: 16px;
   }
 
   .brand-mark {
-    width: 34px;
-    height: 36px;
-    font-size: 22px;
+    width: 30px;
+    height: 32px;
+    font-size: 18px;
+    border-radius: 8px;
   }
 
   .header-search-trigger {
-    padding: 8px 12px;
+    flex: 1;
+    height: 38px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  .search-placeholder {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .search-shortcut {
     display: none;
   }
 
-  .help-button {
-    padding: 6px;
-  }
-  .help-button > span {
-    font-size: 0;
+  .header-right-actions {
+    gap: 6px;
   }
 
+  .commuter-trigger-btn {
+    display: none; /* Accessible directly from bottom navigation bar */
+  }
+
+  .help-button {
+    display: none;
+  }
+
+  .header-weather-pill {
+    padding: 4px 8px;
+    height: 34px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .weather-brief {
+    display: none;
+  }
+
+  /* Mobile Drawer Backdrop */
+  .mobile-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 42, 35, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 95;
+    animation: fade-in 0.2s ease-out;
+  }
+
+  /* Mobile Landmarks Bottom Sheet Drawer */
   .tour-panel {
-    top: 80px;
-    left: 12px;
-    width: 220px;
-    max-height: 48vh;
-    padding: 14px;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 82vh;
+    border-radius: 24px 24px 0 0;
+    padding: 12px 18px 24px;
+    z-index: 100;
+    background: #fbfcf7;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    transform: translateY(110%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tour-panel.mobile-open {
+    transform: translateY(0);
+  }
+
+  .mobile-drawer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+
+  .mobile-drawer-pill {
+    width: 40px;
+    height: 4px;
+    border-radius: 3px;
+    background: #ccd7c4;
+    margin: 0 auto;
+  }
+
+  .mobile-drawer-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e9efe2;
+    color: #37533f;
+    display: grid;
+    place-items: center;
+    margin-left: -28px;
   }
 
   .tour-panel > .eyebrow,
-  .tour-panel > p,
-  .stops-heading {
+  .tour-panel > p {
     display: none;
   }
 
   .tour-panel h1 {
-    font-size: 19px;
-    margin: 0 0 8px;
+    font-size: 20px;
+    margin: 4px 0 10px;
+  }
+
+  .sidebar-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
   .sidebar-stops-list {
-    max-height: 160px;
+    max-height: 38vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
+  /* Map Controls for Mobile */
   .compass {
-    top: 80px;
+    top: 66px;
     right: 12px;
-    padding: 8px;
+    padding: 7px;
   }
 
   .compass span {
@@ -1564,83 +1676,264 @@ footer a {
   }
 
   .map-tools {
-    top: 130px;
+    top: 112px;
     right: 12px;
   }
 
+  .map-tools button {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* GPS Nav Banner */
   .gps-nav-banner {
-    top: 80px;
-    padding: 7px 12px;
-    width: 90%;
-    max-width: 360px;
-  }
-
-  .gps-distance {
-    font-size: 10px;
-  }
-
-  .enhanced-building-card {
+    top: 66px;
+    left: 12px;
     right: 12px;
-    bottom: 120px;
     width: calc(100% - 24px);
-    max-width: 380px;
-    max-height: 46vh;
+    max-width: none;
+    padding: 8px 12px;
   }
 
-  .card-photo-wrap {
-    height: 120px;
-  }
-
+  /* Drive HUD on Mobile */
   .drive-hud {
     left: 12px;
-    bottom: 74px;
-    padding: 9px 12px;
-    gap: 10px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 12px;
+    gap: 8px;
+    z-index: 30;
   }
 
   .speed > strong {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .keyboard-hint {
     display: none;
   }
 
+  /* Building Card on Mobile - Docked Bottom Sheet */
+  .enhanced-building-card {
+    position: fixed;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 65vh;
+    border-radius: 22px 22px 0 0;
+    z-index: 90;
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.28);
+    animation: slide-up-sheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slide-up-sheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .card-photo-wrap {
+    height: 130px;
+  }
+
+  .card-action-bar {
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .primary-action-btn,
+  .secondary-action-btn {
+    height: 42px;
+    font-size: 13px;
+  }
+
+  /* Virtual Steering Gamepad (D-Pad) */
   .touch-controls {
-    position: absolute;
-    bottom: 26px;
-    left: 12px;
+    display: none;
+    position: fixed;
+    bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    left: 14px;
+    z-index: 80;
+  }
+
+  .touch-controls.visible {
+    display: block;
+    animation: fade-in 0.15s ease-out;
+  }
+
+  .virtual-dpad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 42, 35, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 10px;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .dpad-row {
     display: flex;
     gap: 6px;
-    z-index: 20;
   }
 
-  .touch-controls button {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-    background: #fdfef7;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    font-size: 18px;
+  .dpad-key {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #d0dcd0;
+    color: #006747;
+    font-size: 20px;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    user-select: none;
+    touch-action: none;
+    transition: transform 0.05s, background 0.05s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .dpad-key:active {
+    transform: scale(0.92);
+    background: #e5efe2;
+  }
+
+  .dpad-key.brake {
+    background: #fdf2f0;
+    color: #d13234;
+    border-color: #f7cece;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+  }
+
+  .dpad-key.brake:active {
+    background: #fadcd9;
+  }
+
+  /* Mobile Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 6px env(safe-area-inset-bottom, 0px);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid #dfe8d9;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    z-index: 70;
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 48px;
+    color: #4b6351;
+    background: transparent;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-nav-btn span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .mobile-nav-btn:active,
+  .mobile-nav-btn.active {
     color: var(--usf-green);
-    border: 1px solid #d4dec9;
+    background: rgba(0, 103, 71, 0.08);
   }
 
-  footer {
-    padding: 6px 12px;
-    font-size: 8px;
+  .mobile-nav-btn.active span {
+    font-weight: 800;
   }
 
-  footer > span {
+  /* Commuter Modal Mobile Bottom Sheet */
+  .commuter-modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .commuter-modal-container {
+    max-width: 100%;
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 22px 22px 0 0;
+    border: none;
+  }
+
+  .commuter-header {
+    padding: 14px 18px;
+  }
+
+  .commuter-brand-title h2 {
+    font-size: 18px;
+  }
+
+  .commuter-tabs-bar {
+    padding: 0 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .commuter-tabs-bar::-webkit-scrollbar {
     display: none;
   }
 
-  footer > a {
-    margin-left: auto;
+  .commuter-tab-btn {
+    padding: 10px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
+  .commuter-modal-body {
+    padding: 16px 14px;
+  }
+
+  .garage-grid,
+  .amenities-grid,
+  .live-buses-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Search Modal Mobile Full View */
   .search-modal-backdrop {
-    padding: 20px 10px;
+    padding: 0;
+  }
+
+  .search-modal {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-results-list {
+    max-height: calc(100vh - 160px);
+  }
+
+  /* Footer on mobile */
+  footer {
+    display: none; /* Clean up bottom screen estate for bottom nav bar */
   }
 }
 

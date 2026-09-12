@@ -20,6 +20,10 @@ import {
   ShieldAlert,
   Clock,
   Zap,
+  Bus,
+  Gamepad2,
+  Landmark,
+  ChevronDown,
 } from "lucide-react";
 import ExplorerMap, {
   held,
@@ -54,6 +58,9 @@ export default function App() {
   const [navigating, setNavigating] = useState<{ x: number; z: number; name: string; code: string } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCommuterOpen, setIsCommuterOpen] = useState(false);
+  const [commuterTab, setCommuterTab] = useState<"parking" | "departure" | "shuttle" | "amenities" | "weather">("parking");
+  const [mobileLandmarksOpen, setMobileLandmarksOpen] = useState(false);
+  const [showMobileDrivePad, setShowMobileDrivePad] = useState(false);
   const [activeCategory, setActiveCategory] = useState<BuildingCategory | "All">("All");
   const [paused, setPaused] = useState(false);
   const [help, setHelp] = useState(false);
@@ -63,6 +70,12 @@ export default function App() {
   const [rainMode, setRainMode] = useState(false);
   const [parkedCar, setParkedCar] = useState<ParkedCarRecord | null>(() => loadParkedCar());
   const [weather, setWeather] = useState<USFWeatherData>(getTampaDefaultWeather());
+
+  const openCommuterTab = (tab: "parking" | "departure" | "shuttle" | "amenities" | "weather") => {
+    setCommuterTab(tab);
+    setIsCommuterOpen(true);
+    setMobileLandmarksOpen(false);
+  };
 
   const [command, setCommand] = useState<MapCommand>({ kind: "follow", id: 0 });
   const [telemetry, setTelemetry] = useState<Telemetry>({
@@ -269,8 +282,28 @@ export default function App() {
         </div>
       </header>
 
+      {/* Mobile Drawer Backdrop */}
+      {mobileLandmarksOpen && (
+        <div
+          className="mobile-drawer-backdrop"
+          onClick={() => setMobileLandmarksOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Campus Orientation Sidebar */}
-      <aside className="tour-panel">
+      <aside className={`tour-panel ${mobileLandmarksOpen ? "mobile-open" : ""}`}>
+        <div className="mobile-drawer-top">
+          <div className="mobile-drawer-pill" />
+          <button
+            className="mobile-drawer-close"
+            onClick={() => setMobileLandmarksOpen(false)}
+            aria-label="Close landmarks menu"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
         <span className="eyebrow">STUDENT ORIENTATION & COMMUTER HUB</span>
         <h1>
           Explore the
@@ -285,13 +318,13 @@ export default function App() {
         <div className="sidebar-quick-actions">
           <button
             className="quick-hub-btn parking"
-            onClick={() => setIsCommuterOpen(true)}
+            onClick={() => openCommuterTab("parking")}
           >
             <Car size={14} /> Smart Parking
           </button>
           <button
             className="quick-hub-btn weather"
-            onClick={() => setIsCommuterOpen(true)}
+            onClick={() => openCommuterTab("weather")}
           >
             <CloudRain size={14} /> Storm Shield
           </button>
@@ -299,7 +332,10 @@ export default function App() {
 
         <button
           className="sidebar-search-btn"
-          onClick={() => setIsSearchOpen(true)}
+          onClick={() => {
+            setIsSearchOpen(true);
+            setMobileLandmarksOpen(false);
+          }}
         >
           <Search size={15} /> Find Any Building or Room
         </button>
@@ -333,7 +369,10 @@ export default function App() {
               <button
                 className={`stop ${isSelected ? "selected" : ""} ${isNav ? "nav-active" : ""}`}
                 key={p.id}
-                onClick={() => selectPlace(p)}
+                onClick={() => {
+                  selectPlace(p);
+                  setMobileLandmarksOpen(false);
+                }}
               >
                 <span className="stop-code-badge">{p.code}</span>
                 <span className="stop-details">
@@ -350,7 +389,13 @@ export default function App() {
           })}
         </nav>
 
-        <button className="overview-button" onClick={() => act("overview")}>
+        <button
+          className="overview-button"
+          onClick={() => {
+            act("overview");
+            setMobileLandmarksOpen(false);
+          }}
+        >
           <Map size={17} /> See the whole campus <ArrowUpRight size={16} />
         </button>
       </aside>
@@ -516,6 +561,7 @@ export default function App() {
         onToggleRainMode={setRainMode}
         parkedCar={parkedCar}
         onSetParkedCar={setParkedCar}
+        initialTab={commuterTab}
       />
 
       {/* Footer */}
@@ -533,34 +579,124 @@ export default function App() {
         </a>
       </footer>
 
-      {/* Touch Controls for Mobile */}
-      <div className="touch-controls">
-        {[
-          ["KeyA", "←"],
-          ["KeyW", "↑"],
-          ["KeyS", "↓"],
-          ["KeyD", "→"],
-        ].map(([key, label]) => (
+      {/* Touch Virtual Steering D-Pad (Mobile) */}
+      <div className={`touch-controls ${showMobileDrivePad ? "visible" : ""}`}>
+        <div className="virtual-dpad">
           <button
-            key={key}
-            aria-label={
-              key === "KeyW"
-                ? "Accelerate"
-                : key === "KeyS"
-                  ? "Reverse"
-                  : "Steer " + label
-            }
+            className="dpad-key up"
+            aria-label="Gas forward"
             onPointerDown={(e) => {
-              held.add(key);
+              held.add("KeyW");
               e.currentTarget.setPointerCapture(e.pointerId);
             }}
-            onPointerUp={() => held.delete(key)}
-            onPointerCancel={() => held.delete(key)}
+            onPointerUp={() => held.delete("KeyW")}
+            onPointerCancel={() => held.delete("KeyW")}
           >
-            {label}
+            ↑
           </button>
-        ))}
+          <div className="dpad-row">
+            <button
+              className="dpad-key left"
+              aria-label="Steer left"
+              onPointerDown={(e) => {
+                held.add("KeyA");
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerUp={() => held.delete("KeyA")}
+              onPointerCancel={() => held.delete("KeyA")}
+            >
+              ←
+            </button>
+            <button
+              className="dpad-key brake"
+              aria-label="Brake"
+              onPointerDown={(e) => {
+                held.add("Space");
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerUp={() => held.delete("Space")}
+              onPointerCancel={() => held.delete("Space")}
+            >
+              STOP
+            </button>
+            <button
+              className="dpad-key right"
+              aria-label="Steer right"
+              onPointerDown={(e) => {
+                held.add("KeyD");
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerUp={() => held.delete("KeyD")}
+              onPointerCancel={() => held.delete("KeyD")}
+            >
+              →
+            </button>
+          </div>
+          <button
+            className="dpad-key down"
+            aria-label="Reverse"
+            onPointerDown={(e) => {
+              held.add("KeyS");
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerUp={() => held.delete("KeyS")}
+            onPointerCancel={() => held.delete("KeyS")}
+          >
+            ↓
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="mobile-bottom-nav" aria-label="Mobile bottom navigation">
+        <button
+          className="mobile-nav-btn"
+          onClick={() => {
+            setIsSearchOpen(true);
+            setMobileLandmarksOpen(false);
+          }}
+          aria-label="Search campus buildings and rooms"
+        >
+          <Search size={18} />
+          <span>Search</span>
+        </button>
+
+        <button
+          className="mobile-nav-btn"
+          onClick={() => openCommuterTab("shuttle")}
+          aria-label="Bull Runner live bus tracker"
+        >
+          <Bus size={18} />
+          <span>Buses</span>
+        </button>
+
+        <button
+          className="mobile-nav-btn"
+          onClick={() => openCommuterTab("parking")}
+          aria-label="Smart parking garage matcher"
+        >
+          <Car size={18} />
+          <span>Parking</span>
+        </button>
+
+        <button
+          className={`mobile-nav-btn ${mobileLandmarksOpen ? "active" : ""}`}
+          onClick={() => setMobileLandmarksOpen((p) => !p)}
+          aria-label="Campus landmarks directory"
+        >
+          <Landmark size={18} />
+          <span>Places</span>
+        </button>
+
+        <button
+          className={`mobile-nav-btn ${showMobileDrivePad ? "active" : ""}`}
+          onClick={() => setShowMobileDrivePad((p) => !p)}
+          aria-label="Toggle virtual steering controls"
+        >
+          <Gamepad2 size={18} />
+          <span>Drive</span>
+        </button>
+      </nav>
 
       {/* Help Modal */}
       {help && (

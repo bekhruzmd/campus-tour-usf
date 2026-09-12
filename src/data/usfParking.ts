@@ -89,7 +89,11 @@ export const USF_PARKING_FACILITIES: USFParkingGarage[] = [
 ];
 
 // Time-of-day parking occupancy model based on historic USF commuter trends
-export function getGarageOccupancy(garageId: string, customHour?: number): {
+export function getGarageOccupancy(
+  garageId: string,
+  customHour?: number,
+  isWeekendOverride?: boolean,
+): {
   occupancyPercent: number;
   availableSpots: number;
   status: "Low" | "Moderate" | "Busy" | "Nearly Full";
@@ -100,7 +104,12 @@ export function getGarageOccupancy(garageId: string, customHour?: number): {
 
   const now = new Date();
   const hour = customHour !== undefined ? customHour : now.getHours() + now.getMinutes() / 60;
-  const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+  const isWeekend =
+    isWeekendOverride !== undefined
+      ? isWeekendOverride
+      : customHour !== undefined
+        ? false
+        : now.getDay() === 0 || now.getDay() === 6;
 
   let basePercent = 20;
 

@@ -62,6 +62,7 @@ interface CommuterCommandCenterProps {
   onToggleRainMode: (val: boolean) => void;
   parkedCar: ParkedCarRecord | null;
   onSetParkedCar: (record: ParkedCarRecord | null) => void;
+  initialTab?: "parking" | "departure" | "shuttle" | "amenities" | "weather";
 }
 
 export default function CommuterCommandCenter({
@@ -76,10 +77,17 @@ export default function CommuterCommandCenter({
   onToggleRainMode,
   parkedCar,
   onSetParkedCar,
+  initialTab = "parking",
 }: CommuterCommandCenterProps) {
   const [activeTab, setActiveTab] = useState<
     "parking" | "departure" | "shuttle" | "amenities" | "weather"
-  >("parking");
+  >(initialTab);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Parking Tab States
   const [selectedDestPlace, setSelectedDestPlace] = useState<Place>(places[0]);
