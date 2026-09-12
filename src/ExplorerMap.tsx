@@ -759,7 +759,7 @@ export default function ExplorerMap({
         seen = cmd.id;
         dirty = true;
         if (cmd.kind === "zoomIn") zoom = Math.min(2.8, zoom * 1.3);
-        if (cmd.kind === "zoomOut") zoom = Math.max(0.35, zoom / 1.3);
+        if (cmd.kind === "zoomOut") zoom = Math.max(0.18, zoom / 1.3);
         if (cmd.kind === "overview") {
           overview = true;
           zoom = Math.min((size.w - 80) / W, (size.h - 130) / (H * 0.78));
@@ -928,11 +928,12 @@ export default function ExplorerMap({
         const pts = Array.from(activePointers.values());
         const currentDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
         const factor = currentDist / initialPinchDist;
-        const newScale = Math.min(2.5, Math.max(0.2, initialScale * factor));
+        const newScale = Math.min(2.8, Math.max(0.18, initialScale * factor));
 
         if (Math.abs(newScale - camera.scale) > 0.005) {
           overview = true;
           camera.scale = newScale;
+          zoom = newScale;
           dirty = true;
         }
         return;
@@ -985,7 +986,12 @@ export default function ExplorerMap({
         // Click on any building footprint with a genuine real name (no made-up names)
         const p = point(e.offsetX, e.offsetY);
         const b = buildings.find((b) => inPolygon(p.x, p.z, b.points));
-        if (b && b.name && b.name.trim() !== "") {
+        if (
+          b &&
+          b.name &&
+          b.name.trim() !== "" &&
+          !/^(Building\s*\d+|Bldg\s*#?\d+|\d+)$/i.test(b.name)
+        ) {
           callbacks.current.onBuildingSelect(b);
         }
       } else {
@@ -997,10 +1003,11 @@ export default function ExplorerMap({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      const nextScale = Math.min(2.5, Math.max(0.2, camera.scale * zoomFactor));
+      const nextScale = Math.min(2.8, Math.max(0.18, camera.scale * zoomFactor));
       if (Math.abs(nextScale - camera.scale) > 0.005) {
         overview = true;
         camera.scale = nextScale;
+        zoom = nextScale;
         dirty = true;
       }
     };

@@ -69,3 +69,39 @@ test("buildingToPlace converts a projected building into a complete Place", () =
   assert.equal(place.code, "LIB");
   assert.ok(place.roomsAndServices.length > 0);
 });
+
+test("Off-campus buildings have genuine real names and zero fake synthetic labels", () => {
+  const flats = USF_BUILDINGS_CATALOG.find((b) => b.id === "flats4200");
+  assert.ok(flats, "The Flats at 4200 should exist in catalog");
+  assert.equal(flats?.name, "The Flats at 4200");
+
+  const avalon = USF_BUILDINGS_CATALOG.find((b) => b.id === "avalon_heights");
+  assert.ok(avalon, "Avalon Heights should exist in catalog");
+
+  const venue = USF_BUILDINGS_CATALOG.find((b) => b.id === "venue_north_campus");
+  assert.ok(venue, "Venue at North Campus / 4050 Lofts should exist in catalog");
+
+  const province = USF_BUILDINGS_CATALOG.find((b) => b.id === "the_province");
+  assert.ok(province, "The Province should exist in catalog");
+
+  const moffitt = USF_BUILDINGS_CATALOG.find((b) => b.id === "moffitt_cancer_center");
+  assert.ok(moffitt, "Moffitt Cancer Center should exist in catalog");
+
+  const va = USF_BUILDINGS_CATALOG.find((b) => b.id === "va_hospital");
+  assert.ok(va, "VA Hospital should exist in catalog");
+
+  const publix = USF_BUILDINGS_CATALOG.find((b) => b.id === "publix_amberly");
+  assert.ok(publix, "Publix at Amberly should exist in catalog");
+
+  // Verify that getBuildingProfile rejects fake/empty/synthetic names
+  const fakeProfile = getBuildingProfile("Building 1547");
+  assert.equal(fakeProfile.name, "", "Synthetic Building 1547 must not produce a real profile");
+
+  const emptyProfile = getBuildingProfile("");
+  assert.equal(emptyProfile.name, "", "Empty name must not produce a real profile");
+
+  // Verify that no buildings in buildings array have fake names like 'Building <number>'
+  const fakeBuildings = buildings.filter((b) => /^Building \d+$/i.test(b.name));
+  assert.equal(fakeBuildings.length, 0, "There must be zero fake 'Building <number>' names in buildings");
+});
+

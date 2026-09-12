@@ -612,6 +612,277 @@ export const USF_BUILDINGS_CATALOG: USFBuilding[] = [
       { name: "Campus Lost & Found Central", floor: "1st Floor", type: "service", details: "Register lost keys, wallets, laptops, and IDs" },
     ],
   },
+  {
+    id: "avalon_heights",
+    osmName: "Avalon Heights",
+    code: "AVH",
+    name: "Avalon Heights Student Living",
+    shortName: "Avalon Heights",
+    category: "Housing & Dorms",
+    description:
+      "Popular off-campus student apartment community situated at 13601 N 42nd St adjacent to the USF campus, featuring 3- and 4-bedroom student floor plans.",
+    freshmanTip:
+      "Served by Bull Runner Route B with frequent weekday shuttle loops stopping right in front of the leasing gate.",
+    sourceUrl: "https://www.americancampus.com/student-apartments/fl/tampa/avalon-heights",
+    hours: "Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["avalon", "avalon heights", "42nd", "apartments", "housing", "student living"],
+    roomsAndServices: [
+      { name: "Clubhouse & Student Study Center", floor: "1st Floor", type: "study", details: "Computer workstations, printing, and private conference rooms" },
+      { name: "Resort-Style Swimming Pool & Spa", floor: "Courtyard", type: "amenity", details: "Sun lounge deck, outdoor BBQ grills, and sand volleyball court" },
+      { name: "24/7 Fitness Center", floor: "Clubhouse", type: "amenity", details: "Cardio theater, free weights, and strength machines" },
+    ],
+  },
+  {
+    id: "venue_north_campus",
+    osmName: "Venue at North Campus (4050 Lofts)",
+    code: "VNC",
+    name: "Venue at North Campus (4050 Lofts)",
+    shortName: "Venue at North Campus",
+    category: "Housing & Dorms",
+    description:
+      "Contemporary off-campus student living community at 4050 E Fletcher Ave featuring furnished student apartments, resort-style pools, and study facilities.",
+    freshmanTip:
+      "Bull Runner Route B stops right at 4050 Fletcher, offering a fast 7-minute shuttle ride directly into the MSC transit center.",
+    sourceUrl: "https://www.venueatnorthcampus.com/",
+    hours: "Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["venue", "venue at north campus", "4050", "4050 lofts", "lofts", "apartments", "housing"],
+    roomsAndServices: [
+      { name: "Dual Resort Pools & Cabana Lounge", floor: "Courtyard", type: "amenity", details: "Twin swimming pools with sundeck and cabanas" },
+      { name: "Executive Business & Study Center", floor: "Clubhouse", type: "study", details: "iMac stations, high-speed study pods, and complimentary printing" },
+      { name: "24-Hour Multi-Level Fitness Center", floor: "Clubhouse", type: "amenity", details: "Weight lifting area and cardio training equipment" },
+    ],
+  },
+  {
+    id: "the_province",
+    osmName: "The Province Apartments",
+    code: "PROV",
+    name: "The Province Student Housing",
+    shortName: "The Province",
+    category: "Housing & Dorms",
+    description:
+      "Gated student apartment neighborhood located at 10921 McKinley Dr directly south of the USF Tampa campus, featuring townhome and flat accommodations.",
+    freshmanTip:
+      "Directly accessible to the USF Riverfront Park and southern campus gateways via McKinley Drive.",
+    sourceUrl: "https://www.americancampus.com/student-apartments/fl/tampa/the-province",
+    hours: "Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["province", "the province", "mckinley", "apartments", "housing", "student housing"],
+    roomsAndServices: [
+      { name: "Province Resident Clubhouse", floor: "Clubhouse", type: "service", details: "Leasing staff, resident parcel lockers, and concierge" },
+      { name: "Private Academic Study Pods", floor: "Clubhouse", type: "study", details: "Quiet collaborative study rooms with smart screens" },
+      { name: "Zero-Entry Resort Pool & Movie Theater", floor: "Clubhouse Area", type: "amenity", details: "Poolside cabanas, resident clubhouse cinema, and gaming lounge" },
+    ],
+  },
+  {
+    id: "cambridge_woods",
+    osmName: "Cambridge Woods Apartments",
+    code: "CAMB",
+    name: "Cambridge Woods Apartments",
+    shortName: "Cambridge Woods",
+    category: "Housing & Dorms",
+    description:
+      "Established wooded residential apartment community on N 42nd St just north of Fletcher Ave, serving USF upperclassmen and graduate students.",
+    freshmanTip:
+      "Steps from Bull Runner transit stops along 42nd Street and minutes from North Campus dining.",
+    sourceUrl: "https://www.cambridgewoodsapts.com/",
+    hours: "Mon-Fri 8:30 AM - 5:30 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["cambridge", "cambridge woods", "42nd", "apartments", "housing"],
+    roomsAndServices: [
+      { name: "Cambridge Woods Clubhouse & Pool", floor: "Main Grounds", type: "amenity", details: "Lakeside swimming pool and resident clubhouse" },
+      { name: "Dog Park & Nature Trails", floor: "Grounds", type: "amenity", details: "Pet-friendly recreation areas and wooded paths" },
+    ],
+  },
+  {
+    id: "retreat_tampa",
+    osmName: "The Retreat at Tampa",
+    code: "RETR",
+    name: "The Retreat at Tampa",
+    shortName: "The Retreat",
+    category: "Housing & Dorms",
+    description:
+      "Cottage-style student neighborhood on N 46th St near Fletcher Ave featuring standalone craftsman cottages, a resort clubhouse, and pool lounge.",
+    freshmanTip:
+      "Bull Runner shuttles connect the 46th Street corridor to campus during morning and evening rush intervals.",
+    sourceUrl: "https://www.retreatattampa.com/",
+    hours: "Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["retreat", "the retreat", "46th", "cottages", "apartments", "housing"],
+    roomsAndServices: [
+      { name: "The Retreat Clubhouse & Golf Simulator", floor: "Clubhouse", type: "amenity", details: "Virtual golf simulator, billiards, and game room" },
+      { name: "Expansive Multi-Tier Pool", floor: "Courtyard", type: "amenity", details: "Resort swimming pool with outdoor jumbotron screen" },
+    ],
+  },
+  {
+    id: "halo46",
+    osmName: "Halo46",
+    code: "H46",
+    name: "Halo 46 Student Living",
+    shortName: "Halo 46",
+    category: "Housing & Dorms",
+    description:
+      "Luxury off-campus student apartment community located at 14500 N 46th St offering modern flats, gaming courtyards, and fitness spaces.",
+    freshmanTip:
+      "Direct private shuttle and Bull Runner connections ensure easy commuting without parking hassle on campus.",
+    sourceUrl: "https://www.halo46.com/",
+    hours: "Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["halo", "halo46", "halo 46", "46th", "apartments", "housing"],
+    roomsAndServices: [
+      { name: "Gaming Lounge & Cybersports Den", floor: "Clubhouse", type: "amenity", details: "High-spec gaming systems and arcade titles" },
+      { name: "State-of-the-Art Fitness Center", floor: "Clubhouse", type: "amenity", details: "CrossFit rig, cardio equipment, and free weights" },
+    ],
+  },
+  {
+    id: "union_fletcher",
+    osmName: "Union on Fletcher",
+    code: "UONF",
+    name: "Union on Fletcher",
+    shortName: "Union on Fletcher",
+    category: "Housing & Dorms",
+    description:
+      "Contemporary off-campus student housing complex along E Fletcher Ave directly across from the USF Health campus.",
+    freshmanTip:
+      "Prime walking distance to Morsani Center, College of Medicine, and USF Health clinical facilities.",
+    sourceUrl: "https://www.uniononfletcher.com/",
+    hours: "Mon-Fri 9:00 AM - 6:00 PM, Sat 10:00 AM - 5:00 PM",
+    aliases: ["union", "union on fletcher", "fletcher", "apartments", "housing"],
+    roomsAndServices: [
+      { name: "Sky Lounge & Terrace", floor: "Top Floor", type: "amenity", details: "Panoramic views of USF campus and lounge seating" },
+      { name: "Study Lab & Media Suites", floor: "1st Floor", type: "study", details: "Collaborative and private work rooms" },
+    ],
+  },
+  {
+    id: "publix_amberly",
+    osmName: "Publix Super Market at Amberly",
+    code: "PUB",
+    name: "Publix Super Market at Amberly",
+    shortName: "Publix at Amberly",
+    category: "Student Life & Dining",
+    description:
+      "The primary grocery, pharmacy, and deli supermarket serving USF students and north campus residents at Amberly & Fletcher.",
+    freshmanTip:
+      "Famous for Pub Subs at the deli counter! You can order online via the Publix app to skip the lunch rush.",
+    sourceUrl: "https://www.publix.com/",
+    hours: "Daily 7:00 AM - 10:00 PM",
+    aliases: ["publix", "pub sub", "grocery", "deli", "supermarket", "food", "amberly"],
+    roomsAndServices: [
+      { name: "Publix Deli & Sub Counter", floor: "1st Floor", type: "dining", details: "Freshly made hot subs, wraps, and fried chicken tenders" },
+      { name: "Publix Pharmacy", floor: "1st Floor", type: "service", details: "Prescription refills, immunizations, and healthcare essentials" },
+      { name: "Presto! ATM", floor: "Lobby", type: "service", details: "Fee-free ATM services for partner financial networks" },
+    ],
+  },
+  {
+    id: "moffitt_cancer_center",
+    osmName: "H. Lee Moffitt Cancer Center",
+    code: "MOFF",
+    name: "H. Lee Moffitt Cancer Center & Research Institute",
+    shortName: "Moffitt Cancer Center",
+    category: "Health & Medicine",
+    description:
+      "World-renowned National Cancer Institute (NCI) Comprehensive Cancer Center situated right on the USF Tampa campus along USF Magnolia Dr.",
+    freshmanTip:
+      "One of the premier oncology research institutions in the United States, closely integrated with USF biomedical research laboratories.",
+    sourceUrl: "https://www.moffitt.org/",
+    hours: "Hospital 24/7, Outpatient Clinics Mon-Fri 7:00 AM - 6:00 PM",
+    aliases: ["moffitt", "cancer center", "h lee moffitt", "research", "hospital", "clinic", "magnolia"],
+    roomsAndServices: [
+      { name: "Moffitt Outpatient Center & Clinics", floor: "Main Hospital", type: "service", details: "Specialized oncology patient clinics and consultation suites" },
+      { name: "Stabile & Moffitt Research Laboratories", floor: "Research Wing", type: "classroom", details: "Biomedical and translational cancer discovery labs" },
+    ],
+  },
+  {
+    id: "va_hospital",
+    osmName: "James A. Haley Veterans' Hospital (Main Facility)",
+    code: "JAHVA",
+    name: "James A. Haley Veterans' Hospital",
+    shortName: "VA Hospital",
+    category: "Health & Medicine",
+    description:
+      "Major tertiary care VA medical center on Bruce B Downs Blvd affiliated with the USF Morsani College of Medicine for clinical residency and patient care.",
+    freshmanTip:
+      "USF Health medical, nursing, and physical therapy students conduct major clinical rotations here.",
+    sourceUrl: "https://www.va.gov/tampa-health-care/",
+    hours: "Hospital 24/7, Outpatient Clinics Mon-Fri 8:00 AM - 4:30 PM",
+    aliases: ["va", "va hospital", "haley", "james a haley", "veterans", "hospital", "medicine"],
+    roomsAndServices: [
+      { name: "Main Hospital Emergency & Urgent Care", floor: "1st Floor West", type: "service", details: "24/7 emergency medical care for eligible veterans" },
+      { name: "USF Health Clinical Teaching Suites", floor: "Multiple Floors", type: "classroom", details: "Residency education and clinical instruction rounds" },
+    ],
+  },
+  {
+    id: "shriners_florida",
+    osmName: "Shriners Children's Florida",
+    code: "SHRN",
+    name: "Shriners Children's Florida",
+    shortName: "Shriners Children's",
+    category: "Health & Medicine",
+    description:
+      "Renowned pediatric orthopedic specialty medical center located at 12502 USF Pine Dr, providing state-of-the-art care and treatment for children.",
+    freshmanTip:
+      "Located along USF Pine Dr adjacent to the USF College of Medicine and Moffitt Research campus.",
+    sourceUrl: "https://www.shrinerschildrens.org/en/locations/florida",
+    hours: "Mon-Fri 8:00 AM - 4:30 PM",
+    aliases: ["shriners", "shriners hospital", "pediatric", "orthopedic", "pine dr"],
+    roomsAndServices: [
+      { name: "Pediatric Orthopedic Specialty Center", floor: "1st Floor", type: "service", details: "Specialized clinical consultation for pediatric mobility and scoliosis" },
+      { name: "Pediatric Motion Analysis Center", floor: "1st Floor", type: "classroom", details: "Advanced bio-mechanics laboratory analyzing gait and movement" },
+    ],
+  },
+  {
+    id: "university_mall",
+    osmName: "University Mall",
+    code: "RITHM",
+    name: "Rithm at Tampa (University Mall)",
+    shortName: "Rithm / University Mall",
+    category: "Student Life & Dining",
+    description:
+      "A 100-acre mixed-use innovation, technology, retail, and entertainment district at 2200 E Fowler Ave anchored by dining, tech incubators, and student shopping.",
+    freshmanTip:
+      "Served by Bull Runner Route E and HART routes connecting campus to Fowler retail and entertainment.",
+    sourceUrl: "https://www.rithmtampa.com/",
+    hours: "Mon-Sat 10:00 AM - 9:00 PM, Sun 12:00 PM - 6:00 PM",
+    aliases: ["mall", "university mall", "rithm", "fowler", "shopping", "retail", "movies", "food court"],
+    roomsAndServices: [
+      { name: "Innovation Hub & Collaborative Workspaces", floor: "Level 1", type: "study", details: "Tech incubation offices and collaborative student meeting spaces" },
+      { name: "Retail & Dining Pavilion", floor: "Main Concourse", type: "dining", details: "Apparel shops, dining options, and entertainment venues" },
+    ],
+  },
+  {
+    id: "uatc",
+    osmName: "University Area Transit Center",
+    code: "UATC",
+    name: "University Area Transit Center (UATC)",
+    shortName: "UATC Transit Hub",
+    category: "Services & Admin",
+    description:
+      "Major regional transit hub operated by HART at 13110 N 27th St connecting USF Bull Runner shuttles with countywide bus and rapid transit routes.",
+    freshmanTip:
+      "USF students ride HART local buses for free with their valid USF student ID card!",
+    sourceUrl: "https://www.gohart.org/",
+    hours: "Daily 5:00 AM - 11:00 PM",
+    aliases: ["uatc", "transit center", "bus station", "hart", "shuttle hub"],
+    roomsAndServices: [
+      { name: "Transit Ticket & Customer Information Desk", floor: "Central Terminal", type: "service", details: "Route maps, Flamingo Fares cards, and transfer info" },
+      { name: "Multi-Bay Bus Transit Platform", floor: "Ground Level", type: "service", details: "Covered boarding bays for Bull Runner and HART lines" },
+    ],
+  },
+  {
+    id: "morsani_center",
+    osmName: "Carol & Frank Morsani Center for Advanced Health Care",
+    code: "MDD",
+    name: "Carol & Frank Morsani Center for Advanced Healthcare",
+    shortName: "Morsani Center",
+    category: "Health & Medicine",
+    description:
+      "USF Health's premier 6-story outpatient clinical center providing multi-specialty patient care, outpatient surgery, diagnostic imaging, and pharmacy.",
+    freshmanTip:
+      "Features an on-site pharmacy, outpatient surgery suites, and extensive patient parking directly off Laurel Drive.",
+    sourceUrl: "https://health.usf.edu/care/locations/morsani",
+    hours: "Mon-Fri 7:30 AM - 5:00 PM",
+    aliases: ["morsani", "morsani center", "usf health", "clinic", "outpatient", "laurel"],
+    roomsAndServices: [
+      { name: "USF Health Pharmacy & Lobby", floor: "1st Floor", type: "service", details: "Prescription medications and clinical check-in" },
+      { name: "Multi-Specialty Clinical Suites", floor: "Floors 2-5", type: "service", details: "Cardiology, dermatology, orthopedics, and neurology" },
+      { name: "Ambulatory Surgery Center", floor: "6th Floor", type: "service", details: "State-of-the-art outpatient surgical suites" },
+    ],
+  },
 ];
 
 // Helper index: maps any OSM building name or catalog ID to a rich USFBuilding record
@@ -623,19 +894,35 @@ for (const b of USF_BUILDINGS_CATALOG) {
   catalogByName.set(b.shortName.toLowerCase(), b);
 }
 
-// Fallback generator for all other 140+ named OSM buildings so every footprint has rich data
+// Fallback generator for other named OSM buildings (rejects empty or synthetic numbers)
 export function getBuildingProfile(osmName: string): USFBuilding {
-  const existing = catalogByName.get(osmName.toLowerCase());
+  const trimmed = (osmName || "").trim();
+  const existing = catalogByName.get(trimmed.toLowerCase());
   if (existing) return existing;
 
+  // Never synthesize names for unnamed footprints or raw numeric labels
+  if (!trimmed || /^(Building\s*\d+|Bldg\s*#?\d+|\d+)$/i.test(trimmed)) {
+    return {
+      id: "unnamed",
+      osmName: "",
+      code: "",
+      name: "",
+      shortName: "",
+      category: "Academics",
+      description: "",
+      freshmanTip: "",
+      roomsAndServices: [],
+    };
+  }
+
   // Derive sensible code and category
-  let code = osmName
+  let code = trimmed
     .split(/\s+/)
     .filter((w) => !/and|of|the|for|in|at/i.test(w))
     .slice(0, 3)
     .map((w) => w[0]?.toUpperCase() || "")
     .join("");
-  if (code.length < 2) code = osmName.slice(0, 3).toUpperCase();
+  if (code.length < 2) code = trimmed.slice(0, 3).toUpperCase();
 
   let category: BuildingCategory = "Academics";
   let description = `${osmName} is an active facility on the USF Tampa campus.`;
