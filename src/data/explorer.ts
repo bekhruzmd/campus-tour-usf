@@ -18,10 +18,10 @@ export const unproject = (x: number, z: number) => ({
 });
 
 export const bounds = {
-  minX: project(28.069, -82.42585).x,
-  maxX: project(28.05465, -82.4056).x,
-  minZ: project(28.069, -82.42585).z,
-  maxZ: project(28.05465, -82.4056).z,
+  minX: project(28.0587, -82.438).x,
+  maxX: project(28.0587, -82.398).x,
+  minZ: project(28.085, -82.4139).z,
+  maxZ: project(28.040, -82.4139).z,
 };
 
 export const roads = osm.roads.map((r) => ({

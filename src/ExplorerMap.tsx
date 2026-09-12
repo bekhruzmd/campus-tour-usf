@@ -65,7 +65,7 @@ const inPolygon = (x: number, z: number, p: { x: number; z: number }[]) => {
 
 function bake() {
   const canvas = document.createElement("canvas"),
-    k = 1.5;
+    k = Math.min(1.0, 3200 / Math.max(W, H, 1));
   canvas.width = Math.ceil(W * k);
   canvas.height = Math.ceil(H * k);
   const c = canvas.getContext("2d")!;
@@ -275,8 +275,10 @@ export default function ExplorerMap({
 
     const draw = () => {
       const now = performance.now();
-      beaconPulse = (now / 600) % (Math.PI * 2);
-      shuttleProgress = (now / 35000) % 1; // loop bus progress smoothly
+      // Real USF Bull Runner transit cycle (18 minutes = 1,080,000 ms)
+      // Synchronized to real wall clock time so bus movements match realistic 12-16 mph transit speed
+      const TRANSIT_CYCLE_MS = 1080000;
+      shuttleProgress = (Date.now() / TRANSIT_CYCLE_MS) % 1;
 
       ctx.clearRect(0, 0, size.w, size.h);
       ctx.fillStyle = rainRef.current ? "#d2ded0" : "#edf0e4";
@@ -511,6 +513,10 @@ export default function ExplorerMap({
               ctx.fillStyle = "#004d35";
               ctx.textAlign = "center";
               ctx.fillText(route.name.split("—")[0].trim(), bp.x, bp.y - 20);
+
+              ctx.font = '800 7px "DM Sans",sans-serif';
+              ctx.fillStyle = "#006747";
+              ctx.fillText("SCHED • 14 MPH", bp.x, bp.y - 11);
             }
           });
         }
