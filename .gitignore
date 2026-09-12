@@ -10,3 +10,4 @@ dist
 !.env.example
 .serena
 
+scripts/overpass_expanded.json
