@@ -1,6 +1,6 @@
-# USF Campus Tour
+# USF Campus Companion
 
-A small, lightweight campus-exploration prototype: drive a little car around a north-up, drone-style map, click building tags, and explore three photo stops.
+A mobile-first Tampa campus map for classroom lookup, a weekly class plan, saved parking, and walking-direction handoffs. React + TypeScript + Vite with Canvas 2D; no paid map key or persistent backend.
 
 ## Run
 
@@ -11,42 +11,66 @@ npm test
 npm run build
 ```
 
-React + TypeScript + Vite, using Canvas 2D. **No Three.js, WebGL, Cesium, paid tile streaming, or API key is required.** The old 3D implementation is preserved in Git history.
+## Student workflows
 
-The campus map is drawn once to an offscreen canvas. The view renders at up to 30 fps while moving and skips redraws when settled; pixel ratio is capped at 1.5. Only the selected landmark’s photo loads. There is no persistent backend.
+- Search official building codes, names, aliases, and building-room combinations such as `BSN2102` or `NES 323`. Unknown rooms retain the building and are explicitly unverified. CRNs and course prefixes are not treated as classroom locations.
+- Open a compact destination sheet. Expand it to choose a starting building or use a requested geolocation fix. Walking directions open Google Maps, targeting the building centroid. Verified entrances, indoor routing, step-free paths and route times are not yet available.
+- Add weekly classes to **My Day**, compare the available gap, check the walk in Google Maps, and mark rooms found during a practice walk. Classes and checklist state are saved locally.
+- Choose the garage where you actually parked and save a floor/section note. View mapped permit-designated garage areas and official Y/visitor resources. Availability is unknown; individual space signs and current USF rules take precedence. The departure planner uses only the student's own time estimates.
+- Browse named Bull Runner routes and boarding/destination stops. Reported vehicle locations and unknown occupancy are labeled explicitly. The official tracker is linked for arrivals, direction and service changes. No simulated fallback buses are shown.
+- Weather uses Open-Meteo; request failures produce an unavailable state. No generated forecasts or warnings.
+- Optional **Explore mode** enables the virtual car with WASD/arrows or touch controls. Space brakes unless a control has focus. This is a simulation, not road navigation.
 
-## Explore
+## Data and limitations
 
-- WASD / arrow keys: accelerate, reverse, and steer.
-- Space: brake. P: pause. R: reset to the library. M: campus overview.
-- Drag the map to explore, use +/− to zoom, and press the target button to follow your car again.
-- Click a map tag or choose a stop from the sidebar to open a photo card. “Start here” moves the car to a nearby primary road.
-- Touch controls are provided for smaller screens.
+Selected official building codes and garage designations were checked against the [USF campus directory](https://www.usf.edu/parking/documents/campus-map-directory.pdf) and [permit rules](https://www.usf.edu/parking/permits/permit-types.aspx) on September 12, 2026. Unverified codes are hidden. Exact OSM footprint matches are required for featured pins; missing buildings are not silently placed at the library. Unknown profiles have no generated room, hours or access claims. Legacy room/service mentions remain searchable but are not verified indoor directions or current opening-hour data.
 
-Real OSM road paths and 260 building footprints are bundled locally. Names are shown where available; unnamed footprints get numbered labels, not invented names. Tour-stop positions are derived from the corresponding building footprints. This is a conceptual explorer: vegetation is decorative, car dimensions are exaggerated for visibility, and there are no building collisions, surveyed terrain, or turn-by-turn routes.
+Geometry © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0. The background has decorative vegetation. This is an independent, unofficial USF guide. Building photos are shown only where a specific photo exists; USF retains rights to its photographs.
 
-## Code
+Local storage holds only manually entered classes and parking notes. Storage failures are reported, and location permission denial supports choosing a starting building. New parking records use a v2 key; older records from the recommendation-based save flow are intentionally not reused.
 
-- `src/ExplorerMap.tsx`: cached map rendering, following camera, zoom, picking and animation loop.
-- `src/lib/drive.ts`: lightweight driving movement and campus boundaries.
-- `src/data/explorer.ts`: local map projection and curated tour stops.
-- `src/App.tsx`: sidebar, photo cards, keyboard/touch inputs and HUD.
-- `src/data/osm.json`: checked-in campus geometry.
-- `vercel.json`: Vite deployment settings.
+## Accessibility and performance
 
-## Photos and map data
+The phone layout uses a compact destination sheet, persistent bottom navigation, safe-area padding and dynamic viewport heights. Native modal dialogs provide focus containment, Escape dismissal and focus return. Search results and controls are keyboard accessible. Browser page zoom remains enabled; touch map pan/pinch and zoom buttons are available. Reduced-motion preferences remove interaction transforms. Real-device Safari, screen-reader and on-campus route validation are still needed.
 
-Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0, retrieved September 11, 2026. Building-name coverage is incomplete.
+Map rendering is cached; passive views redraw on state changes. Shuttle code/data loads when requested. The bundled OSM geometry remains the largest asset.
 
-Photos are remotely displayed from official USF pages, with source links in each card:
+## Validation
 
-- [USF Tampa Library](https://lib.usf.edu/)
-- [Marshall Student Center](https://www.usf.edu/student-affairs/msc/)
-- [Judy Genshaft Honors College](https://www.usf.edu/honors/about-us/tampa.aspx)
+`npm test` covers code/room lookup, alias collisions, unknown data, exact footprint positions, walking links, parking persistence, malformed saved state, feed failures and departure date rollover.
 
-USF retains rights to its photographs. This independent, non-commercial prototype is not an official USF website. A unavailable-photo state links to the original source.
+The implementation was also exercised in Chromium at 320, 375, 390, 430, 768 and 1440 px widths. See [student audit](docs/student-audit/review.md) and [implementation screenshots](docs/student-audit/implemented/).
 
-## Deployment
+## Deploy
 
-Push to `https://github.com/bekhruzmd/campus-tour-usf.git`, then deploy with Vercel (framework: Vite, output: `dist`). No environment variables are needed. `.env.local` from the older prototype is ignored by Git and explicitly excluded from Vercel uploads; it is not read by the new app.
-# campus-tour-usf
+The existing Vercel configuration builds to `dist`. No environment variables are required. `.env.local` is ignored and excluded from deployment uploads.
+
+### OpenFreeMap
+
+The default map uses MapLibre GL JS with OpenFreeMap’s Liberty basemap.
+No API key, account, or billing configuration is required. Existing Google Maps
+environment variables are unused and can be removed.
+
+Campus-directory pins show verified USF codes. Basemap POI labels are hidden to
+avoid competing place names; road labels remain. Search runs locally, including
+building + room queries. Directions open externally in Google Maps without an API.
+
+OpenFreeMap requires an internet connection. A campus-map fallback is available
+if the map service or WebGL is unavailable. Bull Runner routes, stops, and live vehicle positions appear automatically on
+the main map; positions refresh every 12 seconds while the page is visible.
+Unavailable feeds clear vehicle pins and show a status message. Explore mode
+uses the custom campus map, also with buses enabled. Native map attribution stays visible on mobile.
+See https://openfreemap.org/quick_start/ for provider documentation.
+
+### God’s eye campus view
+
+Select **3D view** in the map controls for a campus-focused mode inspired by
+https://github.com/bilawalsidhu/gods-eye-view. This is an independent MapLibre
+implementation, not an embedded copy of that Cesium globe application.
+It adds extruded OSM footprints (heights are approximate), camera telemetry,
+optional orbit, a cosmetic night style, and click-to-follow Bull Runner buses.
+Bus following updates with the feed every 12 seconds and stops when a bus is no
+longer reported, when you drag the map, or when you leave 3D mode. Orbit respects
+reduced-motion preferences and stops on map interaction. Mobile camera controls
+start collapsed. There are no added paid services, satellite imagery, thermal
+sensor data, aircraft feeds, or surveillance cameras.

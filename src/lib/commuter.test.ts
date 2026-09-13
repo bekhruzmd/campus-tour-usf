@@ -2,107 +2,134 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   USF_PARKING_FACILITIES,
-  getGarageOccupancy,
-  matchBestGarage,
-} from "../data/usfParking.js";
-import {
-  SHUTTLE_ROUTES,
-  SHUTTLE_STOPS,
-  fetchLiveBullRunnerPositions,
-} from "../data/usfShuttle.js";
-import { CAMPUS_AMENITIES } from "../data/usfAmenities.js";
-import { COMMUTER_ORIGINS, calculateDepartureTime } from "../data/commuterCalc.js";
-import { places } from "../data/explorer.js";
+  loadParkedCar,
+  saveParkedCar,
+  clearParkedCar,
+} from "../data/usfParking";
+import { buildings } from "../data/explorer";
+import { fetchLiveBullRunnerPositions } from "../data/usfShuttle";
+import { fetchTampaCampusWeather } from "../data/usfWeather";
+import { departurePlan } from "../data/commuterCalc";
+import { validClass, loadClasses, saveClasses } from "./student";
 
-test("USF Parking Facilities catalog contains all 5 primary commuter options", () => {
-  assert.equal(USF_PARKING_FACILITIES.length, 5);
-
-  const beard = USF_PARKING_FACILITIES.find((g) => g.code === "BEARD");
-  assert.ok(beard, "Beard Garage should exist");
-  assert.ok(beard.bestFor.includes("LIB"), "Beard should serve Library");
-  assert.ok(beard.bestFor.includes("ENG"), "Beard should serve Engineering");
-
-  const collins = USF_PARKING_FACILITIES.find((g) => g.code === "COLLINS");
-  assert.ok(collins, "Collins Garage should exist");
-  assert.ok(collins.bestFor.includes("BSN"), "Collins should serve Business");
-});
-
-test("Garage occupancy simulation reflects realistic peak crunch", () => {
-  const morningPeak = getGarageOccupancy("beard", 10.5); // 10:30 AM
-  assert.ok(
-    morningPeak.occupancyPercent >= 85,
-    `10:30 AM should be high occupancy, got ${morningPeak.occupancyPercent}%`
-  );
-
-  const earlyMorning = getGarageOccupancy("beard", 6.5); // 6:30 AM
-  assert.ok(
-    earlyMorning.occupancyPercent <= 30,
-    `6:30 AM should be low occupancy, got ${earlyMorning.occupancyPercent}%`
-  );
-});
-
-test("matchBestGarage selects the optimal facility for campus destinations", () => {
-  const bsn = places.find((p) => p.code === "BSN");
-  assert.ok(bsn, "BSN should exist in places");
-
-  const bsnMatch = matchBestGarage(bsn!);
-  assert.equal(
-    bsnMatch.recommended.code,
-    "COLLINS",
-    "Collins Garage should be recommended for Business building"
-  );
-
-  const lib = places.find((p) => p.code === "LIB");
-  assert.ok(lib, "LIB should exist in places");
-
-  const libMatch = matchBestGarage(lib!);
-  assert.equal(
-    libMatch.recommended.code,
-    "BEARD",
-    "Beard Garage should be recommended for Library"
-  );
-});
-
-test("calculateDepartureTime correctly computes commute buffers and departure times", () => {
-  const bsn = places.find((p) => p.code === "BSN")!;
-  const result = calculateDepartureTime({
-    classTimeStr: "11:00",
-    originId: "new_tampa",
-    targetPos: bsn,
-  });
-
-  assert.ok(result.recommendedDepartureTime, "Should return a departure time string");
-  assert.ok(result.driveMinutes > 15, "Drive time should include traffic buffer");
-  assert.ok(result.garageSearchMinutes >= 4, "Garage search delay should be calculated");
-  assert.ok(result.walkMinutes > 0, "Walking minutes should be positive");
-  assert.equal(result.recommendedGarage.code, "COLLINS");
-});
-
-test("Bull Runner routes and stops are well-formed", () => {
-  assert.ok(SHUTTLE_ROUTES.length >= 3, "At least 3 routes should be defined");
-  assert.ok(SHUTTLE_STOPS.length >= 6, "At least 6 stops should be defined");
-
-  for (const route of SHUTTLE_ROUTES) {
-    assert.ok(route.waypoints.length >= 4, `Route ${route.name} should have waypoints`);
-    assert.ok(route.stops.length >= 2, `Route ${route.name} should have stops`);
+test("parking uses actual footprint positions and contains no occupancy claims", () => {
+  assert.equal(USF_PARKING_FACILITIES.length, 4);
+  for (const garage of USF_PARKING_FACILITIES) {
+    const b = buildings.find((b) => String(b.id) === garage.id)!;
+    assert.equal(garage.x, b.x);
+    assert.equal(garage.z, b.z);
+    assert.equal("occupancyPercent" in garage, false);
+    assert.equal(garage.permits.includes("Y"), false);
   }
 });
-
-test("Campus Amenities catalog covers caffeine, outlets, and printing", () => {
-  const caffeine = CAMPUS_AMENITIES.filter((a) => a.category === "caffeine");
-  const outlets = CAMPUS_AMENITIES.filter((a) => a.category === "outlets");
-  const printing = CAMPUS_AMENITIES.filter((a) => a.category === "printing");
-
-  assert.ok(caffeine.length >= 3, "Should have 3+ caffeine hotspots");
-  assert.ok(outlets.length >= 3, "Should have 3+ power outlet study desks");
-  assert.ok(printing.length >= 2, "Should have 2+ free student printing labs");
+test("departure planning uses entered buffers and handles previous-day departure", () => {
+  assert.deepEqual(departurePlan("09:00", 30, 15, 15, 10), {
+    time: "07:50",
+    previousDay: false,
+    total: 70,
+  });
+  assert.deepEqual(departurePlan("00:20", 30, 15, 15, 10), {
+    time: "23:10",
+    previousDay: true,
+    total: 70,
+  });
+  assert.equal(departurePlan("09:00", NaN, 1, 1, 1), null);
+  assert.equal(departurePlan("25:00", 1, 1, 1, 1), null);
 });
-
-test("Live Bull Runner feed fetches or returns structured fallback state", async () => {
+test("unavailable or malformed weather never produces fake conditions", async (t) => {
+  const mock = t.mock.method(globalThis, "fetch", async () => {
+    throw new Error("offline");
+  });
+  let weather = await fetchTampaCampusWeather();
+  assert.equal(weather.available, false);
+  assert.equal(weather.temperatureF, null);
+  mock.mock.mockImplementation(
+    async () => new Response(JSON.stringify({ current: {} })),
+  );
+  weather = await fetchTampaCampusWeather();
+  assert.equal(weather.available, false);
+});
+test("shuttle fallback returns no simulated vehicles; missing passenger load remains unknown", async (t) => {
+  const mock = t.mock.method(globalThis, "fetch", async () => {
+    throw new Error("offline");
+  });
+  const failed = await fetchLiveBullRunnerPositions();
+  assert.deepEqual(failed.buses, []);
+  assert.equal(failed.status.isConnected, false);
+  mock.mock.mockImplementation(
+    async () =>
+      new Response(
+        JSON.stringify({
+          buses: {
+            1: [
+              {
+                latitude: "28.06",
+                longitude: "-82.41",
+                busId: 1,
+                routeId: 999,
+              },
+            ],
+          },
+        }),
+      ),
+  );
   const feed = await fetchLiveBullRunnerPositions();
-  assert.ok(feed, "Feed result should be defined");
-  assert.ok(Array.isArray(feed.buses), "Feed buses must be an array");
-  assert.ok(feed.status, "Feed status should be defined");
-  assert.ok(feed.status.feedSource.includes("Passio"), "Feed source should identify Passio GO AVL");
-  assert.ok(typeof feed.status.feedLatencyMs === "number", "Latency should be numeric");
+  assert.equal(feed.buses.length, 1);
+  assert.equal(feed.buses[0].occupancyStatus, undefined);
+  assert.equal(feed.buses[0].routeId, "999");
+  mock.mock.mockImplementation(
+    async () =>
+      new Response(
+        JSON.stringify({
+          buses: { 1: [{ latitude: "garbage", longitude: 1 }] },
+        }),
+      ),
+  );
+  assert.deepEqual((await fetchLiveBullRunnerPositions()).buses, []);
+});
+test("saved state validates corrupt input and preserves the selected garage and class", () => {
+  const store = new Map<string, string>();
+  const old = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (k: string) => store.get(k) || null,
+      setItem: (k: string, v: string) => store.set(k, v),
+      removeItem: (k: string) => store.delete(k),
+    },
+  });
+  try {
+    const garage = USF_PARKING_FACILITIES[2];
+    const saved = {
+      garageName: garage.shortName,
+      floor: "Level 2, west stairs",
+      x: garage.x,
+      z: garage.z,
+      timestamp: new Date().toISOString(),
+    };
+    assert.equal(saveParkedCar(saved), true);
+    assert.deepEqual(loadParkedCar(), saved);
+    clearParkedCar();
+    assert.equal(loadParkedCar(), null);
+    store.set("usf_parked_car_v2", '{"garageName":"wrong","x":"no"}');
+    assert.equal(loadParkedCar(), null);
+    const item = {
+      id: "class1",
+      placeId: "lib",
+      room: "101",
+      day: 1,
+      start: "09:00",
+      end: "09:50",
+      found: false,
+    };
+    assert.equal(validClass(item), true);
+    assert.equal(validClass({ ...item, end: "08:00" }), false);
+    saveClasses([item]);
+    assert.deepEqual(loadClasses(), [item]);
+    store.set("usf_classes_v1", "{}");
+    assert.deepEqual(loadClasses(), []);
+  } finally {
+    if (old) Object.defineProperty(globalThis, "localStorage", old);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  }
 });

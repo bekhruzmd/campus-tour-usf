@@ -21,7 +21,7 @@ export const bounds = {
   minX: project(28.0587, -82.438).x,
   maxX: project(28.0587, -82.398).x,
   minZ: project(28.085, -82.4139).z,
-  maxZ: project(28.040, -82.4139).z,
+  maxZ: project(28.04, -82.4139).z,
 };
 
 export const roads = osm.roads.map((r) => ({
@@ -84,16 +84,15 @@ export type Place = {
   buildingId?: number;
   roomsAndServices: USFBuilding["roomsAndServices"];
   hours?: string;
+  aliases?: string[];
+  codeVerified?: boolean;
+  requestedRoom?: string;
 };
 
 // Generate featured tour stops from USF_BUILDINGS_CATALOG matched with building centroids
 export const places: Place[] = USF_BUILDINGS_CATALOG.map((cat) => {
   // Find matching building footprint
-  const b = buildings.find(
-    (b) =>
-      b.name === cat.osmName ||
-      (b.name && (b.name.includes(cat.osmName) || cat.osmName.includes(b.name))),
-  );
+  const b = buildings.find((b) => b.name === cat.osmName);
 
   const fallbackPos = project(28.0587, -82.4139);
   const x = b ? b.x : fallbackPos.x;
@@ -107,17 +106,17 @@ export const places: Place[] = USF_BUILDINGS_CATALOG.map((cat) => {
     category: cat.category,
     description: cat.description,
     freshmanTip: cat.freshmanTip,
-    photo:
-      cat.photo ||
-      "https://lib.usf.edu/wp-content/uploads/2025/03/20171020-ucm-library-30-md-1.jpg",
+    photo: cat.photo || "",
     source: cat.sourceUrl || "https://www.usf.edu/",
     x,
     z,
     buildingId: b?.id,
     roomsAndServices: cat.roomsAndServices,
     hours: cat.hours,
+    aliases: cat.aliases,
+    codeVerified: cat.codeVerified,
   };
-});
+}).filter((p) => p.buildingId !== undefined);
 
 // Snap car near a primary road
 export function spawnNear(p: { x: number; z: number }) {
@@ -160,14 +159,30 @@ export function buildingToPlace(b: ProjectedBuilding): Place {
     category: b.profile.category,
     description: b.profile.description,
     freshmanTip: b.profile.freshmanTip,
-    photo:
-      b.profile.photo ||
-      "https://lib.usf.edu/wp-content/uploads/2025/03/20171020-ucm-library-30-md-1.jpg",
+    photo: b.profile.photo || "",
     source: b.profile.sourceUrl || "https://www.usf.edu/",
     x: b.x,
     z: b.z,
     buildingId: b.id,
     roomsAndServices: b.profile.roomsAndServices,
     hours: b.profile.hours,
+    aliases: b.profile.aliases,
+    codeVerified: b.profile.codeVerified,
   };
 }
+
+// Named footprints without a catalog match remain searchable without made-up codes.
+export const searchablePlaces: Place[] = [
+  ...places,
+  ...buildings
+    .filter(
+      (b) =>
+        b.name &&
+        !places.some((p) => p.buildingId === b.id || p.id === b.profile.id),
+    )
+    .filter(
+      (b, i, all) =>
+        all.findIndex((other) => other.profile.id === b.profile.id) === i,
+    )
+    .map(buildingToPlace),
+];

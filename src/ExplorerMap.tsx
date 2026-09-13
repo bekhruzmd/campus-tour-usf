@@ -10,17 +10,27 @@ import {
   type ProjectedBuilding,
 } from "./data/explorer";
 import { stepCar, type Car } from "./lib/drive";
-import { USF_PARKING_FACILITIES, getGarageOccupancy, type ParkedCarRecord } from "./data/usfParking";
 import {
-  SHUTTLE_ROUTES,
-  SHUTTLE_STOPS,
-  getPositionOnRoute,
-  fetchLiveBullRunnerPositions,
-  type ActiveShuttleBus,
+  USF_PARKING_FACILITIES,
+  type ParkedCarRecord,
+} from "./data/usfParking";
+import type {
+  ActiveShuttleBus,
+  ShuttleRoute,
+  ShuttleStop,
 } from "./data/usfShuttle";
 
 export type MapCommand = {
-  kind: "zoomIn" | "zoomOut" | "overview" | "follow" | "reset" | "jump" | "navigate" | "autodrive";
+  kind:
+    | "zoomIn"
+    | "zoomOut"
+    | "overview"
+    | "follow"
+    | "reset"
+    | "jump"
+    | "navigate"
+    | "autodrive"
+    | "focus";
   id: number;
   place?: Place;
   targetCoords?: { x: number; z: number; name?: string; code?: string };
@@ -159,6 +169,8 @@ export default function ExplorerMap({
   navigatingPlace,
   showShuttles = true,
   rainMode = false,
+  explore = false,
+  userPosition,
   parkedCar = null,
   onTelemetry,
   onSelect,
@@ -170,13 +182,25 @@ export default function ExplorerMap({
   navigatingPlace?: { x: number; z: number; name: string; code: string } | null;
   showShuttles?: boolean;
   rainMode?: boolean;
+  explore?: boolean;
+  userPosition?: { x: number; z: number };
   parkedCar?: ParkedCarRecord | null;
   onTelemetry: (t: Telemetry) => void;
   onSelect: (p: Place) => void;
   onBuildingSelect: (b: ProjectedBuilding) => void;
 }) {
+  const revision = useRef(0);
+  const shuttleData = useRef<{ routes: ShuttleRoute[]; stops: ShuttleStop[] }>({
+    routes: [],
+    stops: [],
+  });
+  useEffect(() => {
+    revision.current++;
+  }, [selectedPlace, parkedCar, userPosition, explore, showShuttles]);
   const ref = useRef<HTMLCanvasElement>(null),
     callbacks = useRef({ onTelemetry, onSelect, onBuildingSelect }),
+    exploreRef = useRef(explore),
+    userRef = useRef(userPosition),
     pause = useRef(paused),
     control = useRef(command),
     targetRef = useRef(navigatingPlace),
@@ -188,6 +212,8 @@ export default function ExplorerMap({
 
   callbacks.current = { onTelemetry, onSelect, onBuildingSelect };
   pause.current = paused;
+  exploreRef.current = explore;
+  userRef.current = userPosition;
   control.current = command;
   targetRef.current = navigatingPlace;
   selectedRef.current = selectedPlace;
@@ -197,12 +223,22 @@ export default function ExplorerMap({
 
   // Background GTFS-RT Live Feed Poller
   useEffect(() => {
+    if (!showShuttles) {
+      liveBusesRef.current = [];
+      return;
+    }
     let mounted = true;
     const poll = async () => {
       try {
-        const res = await fetchLiveBullRunnerPositions();
+        const data = await import("./data/usfShuttle");
+        const res = await data.fetchLiveBullRunnerPositions();
         if (mounted) {
+          shuttleData.current = {
+            routes: data.SHUTTLE_ROUTES,
+            stops: data.SHUTTLE_STOPS,
+          };
           liveBusesRef.current = res.buses;
+          revision.current++;
         }
       } catch {}
     };
@@ -212,7 +248,7 @@ export default function ExplorerMap({
       mounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [showShuttles]);
 
   useEffect(() => {
     const canvas = ref.current!,
@@ -224,6 +260,7 @@ export default function ExplorerMap({
       zoom = 1.05,
       overview = false,
       seen = -1,
+      seenRevision = -1,
       raf = 0,
       last = performance.now(),
       lastDraw = 0,
@@ -233,14 +270,20 @@ export default function ExplorerMap({
       autoDriving = false,
       autoTarget: { x: number; z: number } | null = null,
       beaconPulse = 0,
-      shuttleProgress = 0,
       drag: { x: number; y: number; startX: number; startY: number } | null =
         null;
-    let tags: { x: number; y: number; w: number; h: number; place: Place }[] =
-      [];
+    let tags: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      label?: boolean;
+      place: Place;
+    }[] = [];
 
     // Rain drop particles
-    const rainDrops: { x: number; y: number; len: number; speed: number }[] = [];
+    const rainDrops: { x: number; y: number; len: number; speed: number }[] =
+      [];
     for (let i = 0; i < 110; i++) {
       rainDrops.push({
         x: Math.random() * innerWidth,
@@ -274,12 +317,9 @@ export default function ExplorerMap({
     });
 
     const draw = () => {
+      const SHUTTLE_ROUTES = shuttleData.current.routes,
+        SHUTTLE_STOPS = shuttleData.current.stops;
       const now = performance.now();
-      // Real USF Bull Runner transit cycle (18 minutes = 1,080,000 ms)
-      // Synchronized to real wall clock time so bus movements match realistic 12-16 mph transit speed
-      const TRANSIT_CYCLE_MS = 1080000;
-      shuttleProgress = (Date.now() / TRANSIT_CYCLE_MS) % 1;
-
       ctx.clearRect(0, 0, size.w, size.h);
       ctx.fillStyle = rainRef.current ? "#d2ded0" : "#edf0e4";
       ctx.fillRect(0, 0, size.w, size.h);
@@ -297,7 +337,8 @@ export default function ExplorerMap({
       const selPlace = selectedRef.current;
 
       // Highlight selected building footprint
-      const activePlace = selPlace || (navPlace && places.find((p) => p.code === navPlace.code));
+      const activePlace =
+        selPlace || (navPlace && places.find((p) => p.code === navPlace.code));
       if (activePlace) {
         const matchingB = buildings.find(
           (b) =>
@@ -324,42 +365,21 @@ export default function ExplorerMap({
         }
       }
 
-      // Render Covered Walkway bypasses during storm / rain
-      if (rainRef.current) {
-        ctx.save();
-        ctx.strokeStyle = "rgba(0, 103, 71, 0.7)";
-        ctx.lineWidth = 6;
-        ctx.setLineDash([4, 4]);
-
-        // Hall of Flags bypass
-        const koppScr = screen(-180, 20);
-        const eng2Scr = screen(-110, 45);
-        ctx.beginPath();
-        ctx.moveTo(koppScr.x, koppScr.y);
-        ctx.lineTo(eng2Scr.x, eng2Scr.y);
-        ctx.stroke();
-
-        // Cooper breezeway
-        const cprScr = screen(15, -45);
-        const mscScr = screen(35, -110);
-        ctx.beginPath();
-        ctx.moveTo(cprScr.x, cprScr.y);
-        ctx.lineTo(mscScr.x, mscScr.y);
-        ctx.stroke();
-        ctx.restore();
-      }
-
       // Render Parking Garages Fullness Badges
       if (camera.scale > 0.65) {
         for (const garage of USF_PARKING_FACILITIES) {
           const gp = screen(garage.x, garage.z);
-          if (gp.x < 10 || gp.x > size.w - 10 || gp.y < 80 || gp.y > size.h - 40) continue;
-
-          const occ = getGarageOccupancy(garage.id);
+          if (
+            gp.x < 10 ||
+            gp.x > size.w - 10 ||
+            gp.y < 80 ||
+            gp.y > size.h - 40
+          )
+            continue;
 
           ctx.save();
           ctx.font = '700 9px "DM Sans",sans-serif';
-          const label = `P  ${garage.shortName.replace(" Parking Facility", "").replace(" Parking Garage", "")} • ${occ.occupancyPercent}%`;
+          const label = `P  ${garage.shortName.replace(" Parking Facility", "").replace(" Parking Garage", "")}`;
           const textW = ctx.measureText(label).width + 16;
 
           ctx.fillStyle = "#fffdf7";
@@ -373,7 +393,7 @@ export default function ExplorerMap({
           // Status dot
           ctx.beginPath();
           ctx.arc(gp.x - textW / 2 + 8, gp.y - 2, 4, 0, Math.PI * 2);
-          ctx.fillStyle = occ.color;
+          ctx.fillStyle = "#006747";
           ctx.fill();
 
           ctx.fillStyle = "#163c2c";
@@ -408,7 +428,13 @@ export default function ExplorerMap({
         // Official Stops
         for (const stop of SHUTTLE_STOPS) {
           const sp = screen(stop.x, stop.z);
-          if (sp.x < -20 || sp.x > size.w + 20 || sp.y < -20 || sp.y > size.h + 20) continue;
+          if (
+            sp.x < -20 ||
+            sp.x > size.w + 20 ||
+            sp.y < -20 ||
+            sp.y > size.h + 20
+          )
+            continue;
 
           ctx.beginPath();
           ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2);
@@ -425,7 +451,12 @@ export default function ExplorerMap({
           // Render Real Live GPS Shuttles from Passio GO Live Feed
           liveBuses.forEach((bus) => {
             const bp = screen(bus.x, bus.z);
-            if (bp.x >= -40 && bp.x <= size.w + 40 && bp.y >= -40 && bp.y <= size.h + 40) {
+            if (
+              bp.x >= -40 &&
+              bp.x <= size.w + 40 &&
+              bp.y >= -40 &&
+              bp.y <= size.h + 40
+            ) {
               ctx.save();
               ctx.translate(bp.x, bp.y);
               ctx.rotate(bus.heading);
@@ -466,57 +497,13 @@ export default function ExplorerMap({
               ctx.textAlign = "center";
               ctx.fillText(bus.busNumber.toUpperCase(), bp.x, bp.y - 20);
 
-              const speedVal = bus.speedMph ?? Math.round(bus.speedMps * 2.237);
-              const paxText = bus.paxLoad !== undefined && bus.paxLoad > 0 ? ` • ${Math.round(bus.paxLoad)}% FULL` : "";
+              const paxText =
+                bus.paxLoad !== undefined && bus.paxLoad > 0
+                  ? ` • ${Math.round(bus.paxLoad)}% FULL`
+                  : "";
               ctx.font = '800 7px "DM Sans",sans-serif';
               ctx.fillStyle = "#10b981";
-              ctx.fillText(`LIVE • ${speedVal} MPH${paxText}`, bp.x, bp.y - 11);
-            }
-          });
-        } else {
-          // Scheduled Route Circulators (Off-Peak / Weekend Simulation)
-          SHUTTLE_ROUTES.forEach((route, idx) => {
-            const busProgress = (shuttleProgress + idx * 0.25) % 1;
-            const pos = getPositionOnRoute(route.waypoints, busProgress);
-            const bp = screen(pos.x, pos.z);
-
-            if (bp.x >= -30 && bp.x <= size.w + 30 && bp.y >= -30 && bp.y <= size.h + 30) {
-              ctx.save();
-              ctx.translate(bp.x, bp.y);
-              ctx.rotate(pos.heading);
-
-              // Bus shadow
-              ctx.shadowColor = "rgba(0,0,0,0.3)";
-              ctx.shadowBlur = 6;
-              ctx.shadowOffsetY = 3;
-
-              // Bus chassis (Route Color / USF Green)
-              ctx.fillStyle = route.color;
-              ctx.beginPath();
-              ctx.roundRect(-10, -18, 20, 36, 4);
-              ctx.fill();
-              ctx.shadowBlur = 0;
-              ctx.shadowOffsetY = 0;
-
-              // Roof
-              ctx.fillStyle = "#fff";
-              ctx.fillRect(-7, -13, 14, 26);
-
-              // Windshield
-              ctx.fillStyle = "#51746f";
-              ctx.fillRect(-7, -16, 14, 4);
-
-              // Bus Label
-              ctx.restore();
-
-              ctx.font = '700 8px "DM Sans",sans-serif';
-              ctx.fillStyle = "#004d35";
-              ctx.textAlign = "center";
-              ctx.fillText(route.name.split("—")[0].trim(), bp.x, bp.y - 20);
-
-              ctx.font = '800 7px "DM Sans",sans-serif';
-              ctx.fillStyle = "#006747";
-              ctx.fillText("SCHED • 14 MPH", bp.x, bp.y - 11);
+              ctx.fillText(`Reported position${paxText}`, bp.x, bp.y - 11);
             }
           });
         }
@@ -525,19 +512,7 @@ export default function ExplorerMap({
       // Render "My Parked Car" Pin
       const pCar = parkedCarRef.current;
       if (pCar) {
-        const carScr = screen(car.x, car.z);
         const pCarScr = screen(pCar.x, pCar.z);
-
-        // Dotted walking line back to car
-        ctx.save();
-        ctx.strokeStyle = "rgba(188, 151, 77, 0.85)"; // USF Gold
-        ctx.lineWidth = 3;
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.moveTo(carScr.x, carScr.y);
-        ctx.lineTo(pCarScr.x, pCarScr.y);
-        ctx.stroke();
-        ctx.restore();
 
         // Parked Car Beacon Pin
         ctx.beginPath();
@@ -561,7 +536,7 @@ export default function ExplorerMap({
       }
 
       // GPS Route Line & Waypoint Beacon (Navigating)
-      if (navPlace) {
+      if (navPlace && exploreRef.current) {
         const carScr = screen(car.x, car.z);
         const targetScr = screen(navPlace.x, navPlace.z);
 
@@ -607,7 +582,7 @@ export default function ExplorerMap({
       }
 
       // Building labels when zoomed in
-      if (camera.scale > 0.78) {
+      if (camera.scale > 1.6) {
         ctx.font = '500 10px "DM Sans",sans-serif';
         ctx.textAlign = "center";
         for (const b of buildings) {
@@ -618,9 +593,7 @@ export default function ExplorerMap({
             continue;
 
           const hasCode = b.profile.code && b.name;
-          const text = hasCode
-            ? `[${b.profile.code}] ${b.label}`
-            : b.label;
+          const text = hasCode ? `[${b.profile.code}] ${b.label}` : b.label;
           const trimmed = text.length > 28 ? text.slice(0, 26) + "…" : text;
 
           ctx.fillStyle = "#fafbf0f0";
@@ -637,7 +610,9 @@ export default function ExplorerMap({
 
       // Curated Landmark Tour Tags
       tags = [];
-      for (const place of places) {
+      for (const place of [...places].sort(
+        (a, b) => Number(b.id === selPlace?.id) - Number(a.id === selPlace?.id),
+      )) {
         const p = screen(place.x, place.z);
         if (p.x < -150 || p.x > size.w + 150 || p.y < -40 || p.y > size.h + 40)
           continue;
@@ -650,11 +625,30 @@ export default function ExplorerMap({
         ctx.lineWidth = 3;
         ctx.stroke();
 
+        tags.push({ x: p.x - 22, y: p.y - 22, w: 44, h: 44, place });
         ctx.font = '600 11px "DM Sans",sans-serif';
-        const label = `${place.code ? `[${place.code}] ` : ""}${place.short}`;
+        let label = `${place.code ? `[${place.code}] ` : ""}${place.short}`;
+        const maxLabelWidth = size.w < 650 ? 180 : 220;
+        if (ctx.measureText(label).width > maxLabelWidth) {
+          while (ctx.measureText(label + "…").width > maxLabelWidth)
+            label = label.slice(0, -1);
+          label += "…";
+        }
         const w = ctx.measureText(label).width + 24,
           x = p.x - w / 2,
           y = p.y - 38;
+        // Keep selected labels first and suppress collisions at every viewport size.
+        if (
+          tags.some(
+            (t) =>
+              t.label &&
+              x < t.x + t.w + 8 &&
+              x + w + 8 > t.x &&
+              y < t.y + 32 &&
+              y + 32 > t.y,
+          )
+        )
+          continue;
 
         ctx.fillStyle = "#fffef7";
         ctx.shadowColor = "#25483320";
@@ -667,53 +661,64 @@ export default function ExplorerMap({
         ctx.fillStyle = "#174c37";
         ctx.textAlign = "center";
         ctx.fillText(label, p.x, y + 16);
-        tags.push({ x, y, w, h: 45, place });
+        tags.push({ x, y, w, h: 25, place, label: true });
       }
 
       // Render the Student Tour Car
-      const p = screen(car.x, car.z);
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(car.heading);
-      ctx.shadowColor = "#153c3460";
-      ctx.shadowBlur = 7;
-      ctx.shadowOffsetY = 4;
+      if (exploreRef.current) {
+        const p = screen(car.x, car.z);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(car.heading);
+        ctx.shadowColor = "#153c3460";
+        ctx.shadowBlur = 7;
+        ctx.shadowOffsetY = 4;
 
-      // Chassis
-      ctx.fillStyle = "#17352c";
-      ctx.beginPath();
-      ctx.roundRect(-9, -16, 18, 32, 6);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
+        // Chassis
+        ctx.fillStyle = "#17352c";
+        ctx.beginPath();
+        ctx.roundRect(-9, -16, 18, 32, 6);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
 
-      // USF Green Body
-      ctx.fillStyle = "#006747";
-      ctx.beginPath();
-      ctx.roundRect(-7, -15, 14, 29, 4);
-      ctx.fill();
+        // USF Green Body
+        ctx.fillStyle = "#006747";
+        ctx.beginPath();
+        ctx.roundRect(-7, -15, 14, 29, 4);
+        ctx.fill();
 
-      // Gold racing roof strip
-      ctx.fillStyle = "#cfc096";
-      ctx.fillRect(-2, -15, 4, 29);
+        // Gold racing roof strip
+        ctx.fillStyle = "#cfc096";
+        ctx.fillRect(-2, -15, 4, 29);
 
-      // Windshield & Rear Window
-      ctx.fillStyle = "#afded0";
-      ctx.fillRect(-5, -8, 10, 6);
-      ctx.fillStyle = "#123e36";
-      ctx.fillRect(-5, 5, 10, 5);
+        // Windshield & Rear Window
+        ctx.fillStyle = "#afded0";
+        ctx.fillRect(-5, -8, 10, 6);
+        ctx.fillStyle = "#123e36";
+        ctx.fillRect(-5, 5, 10, 5);
 
-      // Headlights (Warm Gold)
-      ctx.fillStyle = "#fcebb6";
-      ctx.fillRect(-6, -14, 3, 2);
-      ctx.fillRect(3, -14, 3, 2);
+        // Headlights (Warm Gold)
+        ctx.fillStyle = "#fcebb6";
+        ctx.fillRect(-6, -14, 3, 2);
+        ctx.fillRect(3, -14, 3, 2);
 
-      // Taillights
-      ctx.fillStyle = "#e9a481";
-      ctx.fillRect(-6, 12, 3, 2);
-      ctx.fillRect(3, 12, 3, 2);
-      ctx.restore();
-
+        // Taillights
+        ctx.fillStyle = "#e9a481";
+        ctx.fillRect(-6, 12, 3, 2);
+        ctx.fillRect(3, 12, 3, 2);
+        ctx.restore();
+      }
+      if (userRef.current) {
+        const pos = screen(userRef.current.x, userRef.current.z);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = "#2474d8";
+        ctx.fill();
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
       // Dynamic Tropical Florida Rain Streaks
       if (rainRef.current) {
         ctx.save();
@@ -753,6 +758,10 @@ export default function ExplorerMap({
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
       lastDraw = now;
+      if (seenRevision !== revision.current) {
+        dirty = true;
+        seenRevision = revision.current;
+      }
       const cmd = control.current;
 
       if (cmd.id !== seen) {
@@ -765,6 +774,13 @@ export default function ExplorerMap({
           zoom = Math.min((size.w - 80) / W, (size.h - 130) / (H * 0.78));
           camera.x = (bounds.minX + bounds.maxX) / 2;
           camera.z = (bounds.minZ + bounds.maxZ) / 2;
+        }
+        if (cmd.kind === "focus" && (cmd.place || cmd.targetCoords)) {
+          const target = cmd.place || cmd.targetCoords!;
+          overview = true;
+          camera.x = target.x;
+          camera.z = target.z;
+          zoom = 1.25;
         }
         if (cmd.kind === "follow") {
           overview = false;
@@ -827,7 +843,7 @@ export default function ExplorerMap({
       const throttle = autoDriving ? autoThrottle : manualThrottle;
       const steer = autoDriving ? autoSteer : manualSteer;
 
-      if (!pause.current) {
+      if (!pause.current && exploreRef.current) {
         const next = stepCar(
           car,
           { throttle, steer, brake: held.has("Space") },
@@ -836,7 +852,12 @@ export default function ExplorerMap({
         );
         const travelled = Math.hypot(next.x - car.x, next.z - car.z);
         distance += travelled;
-        dirty ||= travelled > 0 || autoDriving || targetRef.current !== null || shuttlesRef.current || rainRef.current;
+        dirty ||=
+          travelled > 0 ||
+          autoDriving ||
+          targetRef.current !== null ||
+          shuttlesRef.current ||
+          rainRef.current;
         car = next;
       }
 
@@ -856,7 +877,7 @@ export default function ExplorerMap({
         dirty = true;
       }
 
-      if (dirty || rainRef.current || shuttlesRef.current) {
+      if (dirty || rainRef.current) {
         draw();
         dirty = false;
       }
@@ -924,9 +945,16 @@ export default function ExplorerMap({
       activePointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
 
       // Two-finger pinch-to-zoom
-      if (activePointers.size === 2 && initialPinchDist && initialPinchDist > 8) {
+      if (
+        activePointers.size === 2 &&
+        initialPinchDist &&
+        initialPinchDist > 8
+      ) {
         const pts = Array.from(activePointers.values());
-        const currentDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        const currentDist = Math.hypot(
+          pts[1].x - pts[0].x,
+          pts[1].y - pts[0].y,
+        );
         const factor = currentDist / initialPinchDist;
         const newScale = Math.min(2.8, Math.max(0.18, initialScale * factor));
 
@@ -1003,7 +1031,10 @@ export default function ExplorerMap({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      const nextScale = Math.min(2.8, Math.max(0.18, camera.scale * zoomFactor));
+      const nextScale = Math.min(
+        2.8,
+        Math.max(0.18, camera.scale * zoomFactor),
+      );
       if (Math.abs(nextScale - camera.scale) > 0.005) {
         overview = true;
         camera.scale = nextScale;
@@ -1037,7 +1068,8 @@ export default function ExplorerMap({
     <canvas
       ref={ref}
       className="campus-map"
-      aria-label="Interactive north-up USF campus map. Drive with WASD or arrow keys, drag to pan, and click any building or garage."
+      aria-label="USF Tampa campus map. Drag to pan, pinch to zoom. Use Find a class for an accessible list of places."
+      role="img"
     />
   );
 }

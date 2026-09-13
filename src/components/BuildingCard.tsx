@@ -1,217 +1,177 @@
 import { useState } from "react";
 import {
-  Camera,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
+  Footprints,
+  Plus,
   X,
-  Navigation,
-  Flag,
-  Compass,
-  Clock,
-  BookOpen,
   MapPin,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  Layers,
-  Landmark,
+  Flag,
 } from "lucide-react";
-import type { Place } from "../data/explorer";
-
-interface BuildingCardProps {
-  place: Place;
-  isNavigating: boolean;
-  onClose: () => void;
-  onStartHere: (place: Place) => void;
-  onNavigate: (place: Place) => void;
-  onAutoDrive?: (place: Place) => void;
-}
-
+import { searchablePlaces, type Place } from "../data/explorer";
+import { CAMPUS_DIRECTORY_SOURCE } from "../data/usfBuildings";
+import { walkingUrl } from "../lib/search";
 export default function BuildingCard({
   place,
-  isNavigating,
   onClose,
-  onStartHere,
-  onNavigate,
-  onAutoDrive,
-}: BuildingCardProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "rooms" | "freshman">("overview");
+  onAddClass,
+  origin,
+  onLocate,
+  explore,
+  onExploreHere,
+}: {
+  place: Place;
+  onClose: () => void;
+  onAddClass: () => void;
+  origin?: { x: number; z: number };
+  onLocate: () => void;
+  explore: boolean;
+  onExploreHere: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
-
+  const [from, setFrom] = useState("current");
+  const start =
+    from === "current" ? origin : searchablePlaces.find((p) => p.id === from);
   return (
-    <article className="enhanced-building-card" aria-label={`${place.name} information card`}>
-      {/* Photo Header */}
-      <div className="card-photo-wrap">
-        {!photoFailed && place.photo ? (
-          <img
-            key={place.id}
-            src={place.photo}
-            alt={`${place.name} — USF campus facility`}
-            loading="lazy"
-            onError={() => setPhotoFailed(true)}
-          />
-        ) : (
-          <div className="card-photo-placeholder collegiate-plaque">
-            <div className="plaque-icon-wrap">
-              <Landmark size={24} />
-            </div>
-            <strong>{place.name}</strong>
-            <span>USF TAMPA CAMPUS • [{place.code}]</span>
-          </div>
-        )}
-
-        <div className="photo-overlay-badges">
-          <span className="building-code-badge">{place.code}</span>
-          <span className="building-category-badge">{place.category}</span>
+    <article
+      className={`destination-sheet ${expanded ? "expanded" : ""}`}
+      aria-label={`${place.short} details`}
+    >
+      <div className="sheet-grip" aria-hidden="true" />
+      <div className="destination-heading">
+        <span className="code-badge">{place.code || <MapPin size={20} />}</span>
+        <div>
+          <span className="eyebrow">{place.category}</span>
+          <h2>{place.short}</h2>
+          {place.requestedRoom && (
+            <p className="room-label">Room {place.requestedRoom}</p>
+          )}
         </div>
-
         <button
-          className="close-card-btn"
-          aria-label="Close building details"
+          className="icon-button"
           onClick={onClose}
+          aria-label="Close building details"
         >
-          <X size={16} />
+          <X size={20} />
         </button>
       </div>
-
-      {/* Title & Navigation Controls */}
-      <div className="card-header-body">
-        <span className="eyebrow">{place.category.toUpperCase()}</span>
-        <h2>{place.name}</h2>
-
-        {/* Tab Switcher */}
-        <div className="card-tabs">
-          <button
-            className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
-            onClick={() => setActiveTab("overview")}
-          >
-            <BookOpen size={13} />
-            <span>Overview</span>
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "rooms" ? "active" : ""}`}
-            onClick={() => setActiveTab("rooms")}
-          >
-            <Layers size={13} />
-            <span>
-              Rooms ({place.roomsAndServices?.length || 0})
-            </span>
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "freshman" ? "active" : ""}`}
-            onClick={() => setActiveTab("freshman")}
-          >
-            <Sparkles size={13} />
-            <span>Freshman Guide</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="card-scrollable-body">
-        {activeTab === "overview" && (
-          <div className="tab-pane overview-pane">
-            <p className="building-main-desc">{place.description}</p>
-
-            {place.hours && (
-              <div className="building-hours-box">
-                <Clock size={15} />
-                <div>
-                  <strong>Operating Hours</strong>
-                  <p>{place.hours}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="quick-stats-row">
-              <div className="stat-pill">
-                <MapPin size={13} />
-                <span>Code: <strong>{place.code}</strong></span>
-              </div>
-              <div className="stat-pill">
-                <Compass size={13} />
-                <span>North-Up Grid</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "rooms" && (
-          <div className="tab-pane rooms-pane">
-            {!place.roomsAndServices || place.roomsAndServices.length === 0 ? (
-              <p className="no-rooms-msg">General classrooms and offices located across all floors.</p>
-            ) : (
-              <div className="rooms-directory-list">
-                {place.roomsAndServices.map((room, idx) => (
-                  <div key={idx} className="room-directory-item">
-                    <div className="room-item-header">
-                      <strong>{room.name}</strong>
-                      {room.floor && <span className="floor-tag">{room.floor}</span>}
-                    </div>
-                    {room.details && <p className="room-details">{room.details}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === "freshman" && (
-          <div className="tab-pane freshman-pane">
-            <div className="freshman-tip-callout">
-              <div className="tip-header">
-                <Sparkles size={16} />
-                <strong>Freshman Survival Advice</strong>
-              </div>
-              <p>{place.freshmanTip || "Take advantage of office hours and study rooms here between classes."}</p>
-            </div>
-            <div className="campus-transit-tip">
-              <strong>Getting Here:</strong>
-              <p>Catch the USF Bull Runner shuttle or drive your car using the road network. Bicycle racks and scooter hubs are located at the main entrances.</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Action Footer */}
-      <div className="card-action-bar">
-        <button
-          className={`primary-action-btn ${isNavigating ? "navigating" : ""}`}
-          onClick={() => onNavigate(place)}
-          title="Guide car with a glowing GPS path and compass arrow"
-        >
-          <Navigation size={15} />
-          <span>{isNavigating ? "Route Active" : "GPS Navigate"}</span>
-        </button>
-
-        {onAutoDrive && (
-          <button
-            className="secondary-action-btn"
-            onClick={() => onAutoDrive(place)}
-            title="Auto-cruise the car along campus roads to this destination"
-          >
-            <Compass size={15} />
-            <span>Drive Me</span>
-          </button>
-        )}
-
-        <button
-          className="secondary-action-btn"
-          onClick={() => onStartHere(place)}
-          title="Spawn car right by this building"
-        >
-          <Flag size={15} />
-          <span>Park Here</span>
-        </button>
-
+      <div className="destination-actions">
         <a
-          href={place.source}
+          className="primary"
+          href={walkingUrl(place, start)}
           target="_blank"
           rel="noreferrer"
-          className="external-link-btn"
-          title="Open official USF page"
         >
-          <ExternalLink size={15} />
+          <Footprints size={18} />
+          Walking directions
+          <ArrowUpRight size={16} />
         </a>
+        {
+          <button
+            className="icon-button secondary"
+            onClick={onAddClass}
+            aria-label="Add this class to My Day"
+          >
+            <Plus size={20} />
+          </button>
+        }
       </div>
+      <button
+        className="sheet-toggle"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? "Less detail" : "Starting point & building details"}
+        {expanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+      </button>
+      {expanded && (
+        <div className="destination-more">
+          <label className="field">
+            Walk from
+            <select
+              aria-label="Walk from"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            >
+              <option value="current">
+                {origin ? "My located position" : "My location in Google Maps"}
+              </option>
+              {searchablePlaces
+                .filter((p) => p.codeVerified)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} · {p.short}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <p className="quiet">
+            Opens Google Maps in walking mode. The destination is the building,
+            not a verified entrance.
+          </p>
+          {!origin && (
+            <button className="text-button" onClick={onLocate}>
+              Use my location on this map
+            </button>
+          )}
+          {place.photo && !photoFailed && (
+            <img
+              className="building-photo"
+              src={place.photo}
+              onError={() => setPhotoFailed(true)}
+              alt={`${place.name} exterior`}
+              loading="lazy"
+            />
+          )}
+          <div className="info-note">
+            <strong>
+              {place.requestedRoom
+                ? `Room ${place.requestedRoom}: indoor location unverified`
+                : "Before your first class"}
+            </strong>
+            <p>
+              Entrance, room directions, and step-free access haven’t been
+              verified here. Check the building directory when you arrive and
+              allow time to find your room.
+            </p>
+          </div>
+          <div className="link-list">
+            <a href={CAMPUS_DIRECTORY_SOURCE} target="_blank" rel="noreferrer">
+              Official campus directory
+              <ArrowUpRight size={16} />
+            </a>
+            <a href={place.source} target="_blank" rel="noreferrer">
+              Building information & current hours
+              <ArrowUpRight size={16} />
+            </a>
+          </div>
+          <a
+            className="resource-link"
+            href={`https://github.com/bekhruzmd/campus-tour-usf/issues/new?${new URLSearchParams({ title: `Map correction: ${place.code || place.short}`, body: `Place: ${place.name}\nRoom: ${place.requestedRoom || "n/a"}\n\nWhat needs correcting?\n\nSource or details:\n` })}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Report a map correction
+            <ArrowUpRight size={16} />
+          </a>
+          {
+            <p className="quiet">
+              {place.codeVerified
+                ? "Building code checked against USF’s directory · Sep 12, 2026."
+                : "Official building code not yet verified."}{" "}
+              Map position: OpenStreetMap.
+            </p>
+          }
+          {explore && (
+            <button className="secondary" onClick={onExploreHere}>
+              <Flag size={16} />
+              Move virtual car here
+            </button>
+          )}
+        </div>
+      )}
     </article>
   );
 }
